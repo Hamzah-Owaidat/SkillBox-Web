@@ -1,0 +1,72 @@
+:root {
+  --dark: #1F3440;
+  --teal: #2C6566;
+  --bright-teal: #25BDB0;
+  --yellow: #EDBF43;
+  --mint: #56D7B4;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.navbar {
+  background-color: var(--dark);
+}
+
+.navbar-brand,
+.navbar-nav .nav-link {
+  color: #fff !important;
+}
+
+.navbar-nav .nav-link:hover {
+  color: var(--bright-teal) !important;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(31, 52, 64, 0.7);
+}
+
+.btn-warning {
+  background-color: var(--yellow);
+  border: none;
+}
+
+.btn-warning:hover {
+  background-color: #d1a932;
+}
+
+.section-title {
+  color: var(--dark);
+}
+
+.card:hover {
+  transform: scale(1.03);
+  transition: 0.3s ease;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+.card-img-top {
+  height: 250px;
+  object-fit: cover;
+}
+
+footer {
+  background-color: var(--dark);
+  color: white;
+  padding: 30px 0;
+}
+
+footer a {
+  color: var(--mint);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
