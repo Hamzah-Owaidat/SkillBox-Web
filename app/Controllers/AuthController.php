@@ -71,12 +71,76 @@ class AuthController {
             'role_id' => $role['id']
         ]);
 
-        $_SESSION['toast_message'] = 'Registration successful! Please login.';
-        $_SESSION['toast_type'] = 'success';
-        header("Location: {$this->baseUrl}/login");
+        if ($isApi) {
+            echo json_encode([
+                'message' => 'Registration successful! Please login.'
+            ]);
+            return;
+        } else {
+            $_SESSION['toast_message'] = 'Registration successful! Please login.';
+            $_SESSION['toast_type'] = 'success';
+            header("Location: {$this->baseUrl}/login");
+        }
     }
 
+    public function registerApi() {
+        // Ensure JSON input
+        $data = json_decode(file_get_contents('php://input'), true);
 
+        if (!$data) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid JSON']);
+            return;
+        }
+
+        $errors = [];
+
+        if (empty($data['full_name'])) {
+            $errors['full_name'] = 'Full name is required';
+        } elseif (strlen($data['full_name']) < 3) {
+            $errors['full_name'] = 'Full name must be at least 3 characters';
+        }
+
+        if (empty($data['email'])) {
+            $errors['email'] = 'Email is required';
+        } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Invalid email format';
+        } elseif (User::findByEmail($data['email'])) {
+            $errors['email'] = 'Email already used';
+        }
+
+        if (empty($data['password'])) {
+            $errors['password'] = 'Password is required';
+        } elseif (!preg_match('/^(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}$/', $data['password'])) {
+            $errors['password'] = 'Password must have 1 uppercase, 1 special char, and be at least 8 chars';
+        }
+
+        if (!empty($errors)) {
+            http_response_code(422);
+            echo json_encode(['errors' => $errors]);
+            return;
+        }
+
+        $role = \App\Models\Role::findByName('client');
+        if (!$role) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Default role not found']);
+            return;
+        }
+
+        $hashed = password_hash($data['password'], PASSWORD_BCRYPT);
+
+        User::create([
+            'full_name' => $data['full_name'],
+            'email' => $data['email'],
+            'password' => $hashed,
+            'role_id' => $role['id']
+        ]);
+
+        echo json_encode([
+            'message' => 'Registration successful! Please login.'
+        ]);
+    }
 
     // API login -> return JWT
     public function loginApi() {

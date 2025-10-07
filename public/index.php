@@ -33,8 +33,13 @@ if ($requestUri === '') $requestUri = '/';
 // ------------------ ROUTES ------------------
 
 // Register (web + mobile)
-if (($requestUri === '/register' || $requestUri === '/api/register') && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $AuthController->register($inputIsJson);
+if ($requestUri === '/api/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $AuthController->registerApi();
+    exit;
+}
+
+if ($requestUri === '/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $AuthController->register();
     exit;
 }
 
