@@ -1,16 +1,28 @@
 <?php
 namespace App\Controllers;
+
 use App\Core\AuthMiddleware;
+use App\Models\Role;
 
 class UserController {
     public function me() {
-        // For API call, enforce JWT auth
+        // Enforce JWT auth for API
         AuthMiddleware::api();
+
         $user = $GLOBALS['auth_user'];
+
+        // Get role name using Role model
+        $roleName = null;
+        if (!empty($user['role_id'])) {
+            $roleData = Role::findById($user['role_id']);
+            $roleName = $roleData['name'] ?? 'Unknown';
+        }
+
         echo json_encode([
             'id' => $user['id'],
+            'full_name' => $user['full_name'],
             'email' => $user['email'],
-            'full_name' => $user['full_name']
+            'role' => $roleName
         ]);
     }
 }

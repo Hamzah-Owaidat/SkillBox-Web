@@ -143,25 +143,42 @@ class AuthController {
     }
 
     // API login -> return JWT
-    public function loginApi() {
+    public function loginApi()
+    {
         $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+
         $user = User::findByEmail($data['email'] ?? '');
+
         if (!$user || !password_verify($data['password'] ?? '', $user['password'])) {
             http_response_code(401);
             echo json_encode(['error' => 'Invalid credentials']);
             return;
         }
+
+        // ✅ Use Role model to get role name
+        $role = null;
+        if (!empty($user['role_id'])) {
+            $roleData = \App\Models\Role::findById($user['role_id']);
+            $role = $roleData['name'] ?? 'Unknown';
+        }
+
+        // ✅ Generate JWT
         $token = JWTHelper::generate($user);
+
+        // ✅ Send response
         echo json_encode([
             'token' => $token,
-            'expires_in' => (int)(getenv('JWT_EXPIRES') ?: 3600),
+            'expires_in' => (int)($_ENV['JWT_EXPIRES_IN'] ?? 3600),
             'user' => [
                 'id' => $user['id'],
-                'name' => $user['name'],
-                'email' => $user['email']
+                'full_name' => $user['full_name'],
+                'email' => $user['email'],
+                'role' => $role, // send role name instead of ID
             ]
         ]);
     }
+
+
 
     // Web login -> session
     public function loginWeb() {

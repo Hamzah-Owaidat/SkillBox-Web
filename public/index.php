@@ -10,6 +10,10 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 // Load Composer autoloader
 require __DIR__ . '/../vendor/autoload.php';
 
+use Dotenv\Dotenv;
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
 $AuthController = new \App\Controllers\AuthController();
 $UserController = new \App\Controllers\UserController();
 $HomeController = new \App\Controllers\HomeController();
@@ -25,14 +29,21 @@ $inputIsJson = strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== fa
 // ------------------ STRIP BASE PATH ------------------
 // Adjust this to your project folder inside www
 $basePath = '/skillbox/public'; 
+
 if (strpos($requestUri, $basePath) === 0) {
     $requestUri = substr($requestUri, strlen($basePath));
 }
+
 if ($requestUri === '') $requestUri = '/';
 
 // ------------------ ROUTES ------------------
 
-// Register (web + mobile)
+// Register
+if ($requestUri === '/register' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $AuthController->showRegisterForm();
+    exit;
+}
+
 if ($requestUri === '/api/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $AuthController->registerApi();
     exit;
@@ -43,25 +54,23 @@ if ($requestUri === '/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-if ($requestUri === '/register' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $AuthController->showRegisterForm();
-    exit;
-}
 
 // Login
-if (($requestUri === '/login' || $requestUri === '/api/login') && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($inputIsJson) {
-        $AuthController->loginApi();
-    } else {
-        $AuthController->loginWeb();
-    }
-    exit;
-}
-
 if ($requestUri === '/login' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $AuthController->showLoginForm();
     exit;
 }
+
+if ($requestUri === '/login' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
+    $AuthController->loginWeb();
+    exit;
+}
+
+if ($requestUri === '/api/login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $AuthController->loginApi();
+    exit;
+}
+
 
 // Get current user (API only)
 if ($requestUri === '/api/me' && $_SERVER['REQUEST_METHOD'] === 'GET') {
