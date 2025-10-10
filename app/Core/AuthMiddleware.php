@@ -44,6 +44,6 @@ class AuthMiddleware {
             header('Location: /login');
             exit;
         }
-        $GLOBALS['auth_user'] = \App\Models\User::find($_SESSION['user_id']);
+        $GLOBALS['auth_user'] = User::find($_SESSION['user_id']);
     }
 }

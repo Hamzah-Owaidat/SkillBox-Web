@@ -1,6 +1,9 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # ✅ Fix: pass Authorization header to PHP
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
     # If file/folder exists, serve it
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

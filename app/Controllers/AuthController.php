@@ -163,7 +163,13 @@ class AuthController {
         }
 
         // ✅ Generate JWT
-        $token = JWTHelper::generate($user);
+        $token = JWTHelper::generate([
+            'id' => $user['id'],
+            'email' => $user['email'],
+            'full_name' => $user['full_name'],
+            'role' => $role, // add role here
+        ]);
+
 
         // ✅ Send response
         echo json_encode([

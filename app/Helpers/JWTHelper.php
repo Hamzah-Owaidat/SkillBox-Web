@@ -8,6 +8,7 @@ class JWTHelper {
         $key = $_ENV['JWT_SECRET'];
         $exp = time() + (int)($_ENV['JWT_EXPIRES_IN'] ?: 3600);
         $alg = $_ENV['JWT_ALGO'] ?: 'HS256';
+        $role = $userPayload['role'] ?? null;
         $payload = [
             'iss' => $_ENV['APP_URL'] ?: 'http://localhost',
             'sub' => $userPayload['id'],
@@ -17,6 +18,7 @@ class JWTHelper {
                 'id' => $userPayload['id'],
                 'email' => $userPayload['email'],
                 'full_name' => $userPayload['full_name'],
+                'role' => $role,
             ]
         ];
         return JWT::encode($payload, $key, $alg);

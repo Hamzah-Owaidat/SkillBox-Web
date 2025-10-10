@@ -1,94 +1,44 @@
 <?php
-// Enable CORS for API testing
+// Enable CORS for API
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 
 // Start session for web auth
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Load Composer autoloader
+// Autoload
 require __DIR__ . '/../vendor/autoload.php';
-
 use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
-$AuthController = new \App\Controllers\AuthController();
-$UserController = new \App\Controllers\UserController();
-$HomeController = new \App\Controllers\HomeController();
+// Instantiate router (simple router class or your own)
+$router = new \App\Core\Router();
 
-// ------------------ ROUTER ------------------
+// Load routes
+require __DIR__ . '/../routes/web.php';
+require __DIR__ . '/../routes/api.php';
 
-// Get the full request URI and remove query string
+// Dispatch request
 $requestUri = strtok($_SERVER['REQUEST_URI'], '?');
+$method = $_SERVER['REQUEST_METHOD'];
 
-// Detect if request is JSON (API/mobile)
-$inputIsJson = strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false;
-
-// ------------------ STRIP BASE PATH ------------------
-// Adjust this to your project folder inside www
-$basePath = '/skillbox/public'; 
-
+// Remove base path
+$basePath = '/skillbox/public';
 if (strpos($requestUri, $basePath) === 0) {
     $requestUri = substr($requestUri, strlen($basePath));
 }
-
 if ($requestUri === '') $requestUri = '/';
 
-// ------------------ ROUTES ------------------
-
-// Register
-if ($requestUri === '/register' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $AuthController->showRegisterForm();
-    exit;
+// Dispatch via router
+if (!$router->dispatch($requestUri, $method)) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Endpoint not found']);
 }
-
-if ($requestUri === '/api/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $AuthController->registerApi();
-    exit;
-}
-
-if ($requestUri === '/register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $AuthController->register();
-    exit;
-}
-
-
-// Login
-if ($requestUri === '/login' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $AuthController->showLoginForm();
-    exit;
-}
-
-if ($requestUri === '/login' && $_SERVER['REQUEST_METHOD'] === 'POST') { 
-    $AuthController->loginWeb();
-    exit;
-}
-
-if ($requestUri === '/api/login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $AuthController->loginApi();
-    exit;
-}
-
-
-// Get current user (API only)
-if ($requestUri === '/api/me' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $UserController->me();
-    exit;
-}
-
-// Web logout
-if ($requestUri === '/logout' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $AuthController->logoutWeb();
-    exit;
-}
-
-if ($requestUri === '/' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $HomeController->index();
-    exit;
-}
-
-// Default response
-http_response_code(404);
-echo json_encode(['error' => 'Endpoint not found']);
