@@ -2,6 +2,7 @@
 use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\PortfolioController;
+use App\Controllers\ServicesController;
 use App\Controllers\UserController;
 
 // Auth
@@ -25,3 +26,6 @@ $router->post('/portfolio/store', [PortfolioController::class, 'store']);
 $router->post('/portfolio/delete/{id}', [PortfolioController::class, 'deletePortfolio']);
 $router->get('/portfolio/edit/{id}', [PortfolioController::class, 'showEditForm']); // NEW: Show edit form
 $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePortfolio']); // NEW: Update portfolio
+
+// Services
+$router->get('/services', [ServicesController::class, 'index']);
