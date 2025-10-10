@@ -32,21 +32,42 @@ class Router {
         $method = strtoupper($method);
         $uri = strtok($uri, '?'); // Strip query string
 
+        // First try exact match
         if (isset($this->routes[$method][$uri])) {
             $callback = $this->routes[$method][$uri];
-
-            if (is_array($callback) && count($callback) === 2) {
-                [$class, $func] = $callback;
-                $controller = new $class();
-                $controller->$func();
-            } elseif (is_callable($callback)) {
-                $callback();
-            }
+            $this->executeCallback($callback, []);
             return true;
+        }
+
+        // Try pattern matching for dynamic routes
+        foreach ($this->routes[$method] ?? [] as $route => $callback) {
+            $pattern = $this->convertRouteToRegex($route);
+            if (preg_match($pattern, $uri, $matches)) {
+                array_shift($matches); // Remove full match
+                $this->executeCallback($callback, $matches);
+                return true;
+            }
         }
 
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']);
         return false;
+    }
+
+    private function convertRouteToRegex($route) {
+        // Convert /portfolio/delete/{id} to regex pattern
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([^/]+)', $route);
+        return '#^' . $pattern . '$#';
+    }
+
+    private function executeCallback($callback, $params) {
+        if (is_array($callback) && count($callback) === 2) {
+            [$class, $func] = $callback;
+            $controller = new $class();
+            // Pass parameters to controller method
+            call_user_func_array([$controller, $func], $params);
+        } elseif (is_callable($callback)) {
+            call_user_func_array($callback, $params);
+        }
     }
 }
