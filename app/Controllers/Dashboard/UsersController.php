@@ -34,21 +34,21 @@ class UsersController {
         // Validation
         if (empty($fullName) || empty($email) || empty($password)) {
             $_SESSION['toast_message'] = 'All fields are required.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $_SESSION['toast_message'] = 'Invalid email format.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
 
         if (strlen($password) < 6) {
             $_SESSION['toast_message'] = 'Password must be at least 6 characters.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -56,7 +56,7 @@ class UsersController {
         // Check if email exists
         if (User::findByEmail($email)) {
             $_SESSION['toast_message'] = 'Email already exists.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -64,7 +64,7 @@ class UsersController {
         // Verify role exists
         if (!Role::findById($roleId)) {
             $_SESSION['toast_message'] = 'Invalid role selected.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -83,7 +83,7 @@ class UsersController {
             $_SESSION['toast_type'] = 'success';
         } else {
             $_SESSION['toast_message'] = 'Failed to create user.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
         }
 
         header("Location: {$this->baseUrl}/dashboard/users");
@@ -105,14 +105,14 @@ class UsersController {
         // Validation
         if (empty($fullName) || empty($email)) {
             $_SESSION['toast_message'] = 'Full name and email are required.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $_SESSION['toast_message'] = 'Invalid email format.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -121,7 +121,7 @@ class UsersController {
         $existingUser = User::findByEmail($email);
         if ($existingUser && $existingUser['id'] != $id) {
             $_SESSION['toast_message'] = 'Email already exists.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -129,7 +129,7 @@ class UsersController {
         // Verify role exists
         if (!Role::findById($roleId)) {
             $_SESSION['toast_message'] = 'Invalid role selected.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -146,7 +146,7 @@ class UsersController {
         if (!empty($password)) {
             if (strlen($password) < 6) {
                 $_SESSION['toast_message'] = 'Password must be at least 6 characters.';
-                $_SESSION['toast_type'] = 'error';
+                $_SESSION['toast_type'] = 'danger';
                 header("Location: {$this->baseUrl}/dashboard/users");
                 exit;
             }
@@ -159,7 +159,7 @@ class UsersController {
             $_SESSION['toast_type'] = 'success';
         } else {
             $_SESSION['toast_message'] = 'Failed to update user.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
         }
 
         header("Location: {$this->baseUrl}/dashboard/users");
@@ -171,7 +171,7 @@ class UsersController {
         // Prevent deactivating yourself
         if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $id) {
             $_SESSION['toast_message'] = 'You cannot deactivate your own account.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -181,7 +181,7 @@ class UsersController {
             $_SESSION['toast_type'] = 'success';
         } else {
             $_SESSION['toast_message'] = 'Failed to update user status.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
         }
         
         header("Location: {$this->baseUrl}/dashboard/users");
@@ -193,7 +193,7 @@ class UsersController {
         // Prevent deleting yourself
         if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $id) {
             $_SESSION['toast_message'] = 'You cannot delete your own account.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
         }
@@ -203,7 +203,7 @@ class UsersController {
             $_SESSION['toast_type'] = 'success';
         } else {
             $_SESSION['toast_message'] = 'Failed to delete user.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
         }
         
         header("Location: {$this->baseUrl}/dashboard/users");

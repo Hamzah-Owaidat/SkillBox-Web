@@ -243,37 +243,6 @@ $modalConfig['content'] = ob_get_clean();
 include __DIR__ . '/../components/modal.php';
 ?>
 
-<style>
-.avatar-circle {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--bright-teal), var(--mint));
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.toast {
-  min-width: 300px;
-}
-</style>
-
-<script>
-// Auto-hide toast after 5 seconds
-document.addEventListener('DOMContentLoaded', function() {
-  const toastEl = document.querySelector('.toast');
-  if (toastEl) {
-    setTimeout(() => {
-      toastEl.classList.remove('show');
-    }, 5000);
-  }
-});
-</script>
-
 <?php
 $content = ob_get_clean();
 include __DIR__ . '/../layouts/dashboard.php';

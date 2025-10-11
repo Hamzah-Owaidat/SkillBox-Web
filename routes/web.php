@@ -26,7 +26,7 @@ $router->post('/user/update', [UserController::class, 'update']);
 // Portfolio
 $router->get('/submit-cv', [PortfolioController::class, 'index']);
 $router->post('/portfolio/store', [PortfolioController::class, 'store']);
-$router->post('/portfolio/delete/{id}', [PortfolioController::class, 'deletePortfolio']);
+$router->delete('/portfolio/delete/{id}', [PortfolioController::class, 'deletePortfolio']);
 $router->get('/portfolio/edit/{id}', [PortfolioController::class, 'showEditForm']); // NEW: Show edit form
 $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePortfolio']); // NEW: Update portfolio
 
@@ -47,3 +47,7 @@ $router->get('/dashboard/users/export', [UsersController::class, 'export']);
 
 // Dashboard Role
 $router->get('/dashboard/roles', [RoleController::class, 'index']);
+$router->post('/dashboard/roles/store', [RoleController::class, 'store']);
+$router->patch('/dashboard/roles/{id}', [RoleController::class, 'update']);
+$router->delete('/dashboard/roles/{id}', [RoleController::class, 'delete']);
+$router->get('/dashboard/roles/export', [RoleController::class, 'export']);

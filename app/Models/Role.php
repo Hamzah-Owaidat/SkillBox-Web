@@ -24,8 +24,64 @@ class Role extends Model {
         return self::findById($id);
     }
 
+    public static function create(array $data) {
+        $stmt = self::db()->prepare("
+            INSERT INTO " . static::$table . " 
+            (name, created_by) 
+            VALUES (?, ?)
+        ");
+        $stmt->execute([
+            $data['name'],
+            $data['created_by'] ?? null
+        ]);
+        return self::db()->lastInsertId();
+    }
+
+    public static function update($id, array $data) {
+        $fields = [];
+        $values = [];
+
+        if (isset($data['name'])) {
+            $fields[] = "name = ?";
+            $values[] = $data['name'];
+        }
+
+        // 👇 Add updated_by tracking
+        if (isset($data['updated_by'])) {
+            $fields[] = "updated_by = ?";
+            $values[] = $data['updated_by'];
+        }
+
+        $fields[] = "updated_at = NOW()";
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $values[] = $id;
+        $sql = "UPDATE " . static::$table . " SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = self::db()->prepare($sql);
+        return $stmt->execute($values);
+    }
+
+    public static function delete($id) {
+        $stmt = self::db()->prepare("DELETE FROM " . static::$table . " WHERE id = ?");
+        return $stmt->execute([$id]);
+    }
+
     public static function getAll() {
-        $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " ORDER BY id ASC");
+        $sql = "
+            SELECT 
+                r.*, 
+                u1.full_name AS created_by,
+                u2.full_name AS updated_by
+            FROM roles r
+            LEFT JOIN users u1 ON r.created_by = u1.id
+            LEFT JOIN users u2 ON r.updated_by = u2.id
+            ORDER BY r.id ASC
+        ";
+        
+        $stmt = self::db()->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -37,7 +93,7 @@ class Role extends Model {
         $stmt->execute();
         $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 
-        $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " ORDER BY id DESC LIMIT :limit OFFSET :offset");
+        $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " ORDER BY id ASC LIMIT :limit OFFSET :offset");
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         $stmt->execute();

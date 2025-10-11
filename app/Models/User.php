@@ -77,7 +77,6 @@ class User extends Model {
         return $stmt->execute($values);
     }
 
-
     public static function delete($id) {
         $stmt = self::db()->prepare("DELETE FROM " . static::$table . " WHERE id = ?");
         return $stmt->execute([$id]);
