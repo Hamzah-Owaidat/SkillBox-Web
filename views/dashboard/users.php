@@ -6,9 +6,15 @@ ob_start();
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Users Management</h2>
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
-        <i class="fas fa-plus me-2"></i>Add New User
-    </button>
+    <div class="d-flex justify-content-between align-items-center gap-3">
+      <button class="btn btn-success" onclick="window.location.href='/skillbox/public/dashboard/users/export'">
+        <i class="fas fa-file-excel me-2"></i> Export to Excel
+      </button>
+
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+          <i class="fas fa-plus me-2"></i>Add New User
+      </button>
+    </div>
 </div>
 
 <div class="card p-4">

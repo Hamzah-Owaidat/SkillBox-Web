@@ -42,6 +42,8 @@ $router->post('/dashboard/users/store', [UsersController::class, 'store']);
 $router->patch('/dashboard/users/{id}', [UsersController::class, 'update']);
 $router->patch('/dashboard/users/{id}/toggle-status', [UsersController::class, 'toggleStatus']);
 $router->delete('/dashboard/users/{id}', [UsersController::class, 'delete']);
+$router->get('/dashboard/users/export', [UsersController::class, 'export']);
+
 
 // Dashboard Role
 $router->get('/dashboard/roles', [RoleController::class, 'index']);

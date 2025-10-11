@@ -20,7 +20,7 @@ class User extends Model {
 
     public static function create(array $data) {
         $stmt = self::db()->prepare(
-            "INSERT INTO " . static::$table . " (full_name, email, password, role_id, status) VALUES (?, ?, ?, ?, 'active)"
+            "INSERT INTO " . static::$table . " (full_name, email, password, role_id, status) VALUES (?, ?, ?, ?, 'active')"
         );
         $stmt->execute([
             $data['full_name'],
@@ -86,20 +86,18 @@ class User extends Model {
         return $stmt->execute([$id]);
     }
 
-
-
     // ✅ Update status specifically
-    public static function updateStatus($id, $status) {
-        $stmt = self::db()->prepare("UPDATE " . static::$table . " SET status = ? WHERE id = ?");
-        return $stmt->execute([$status, $id]);
-    }
+    // public static function updateStatus($id, $status) {
+    //     $stmt = self::db()->prepare("UPDATE " . static::$table . " SET status = ? WHERE id = ?");
+    //     return $stmt->execute([$status, $id]);
+    // }
 
     public static function getAll() {
         $stmt = self::db()->prepare("
             SELECT users.*, roles.name AS role_name
             FROM users
             LEFT JOIN roles ON users.role_id = roles.id
-            ORDER BY users.id DESC
+            ORDER BY users.id ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

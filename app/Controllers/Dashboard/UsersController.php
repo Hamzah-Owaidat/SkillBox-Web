@@ -207,4 +207,49 @@ class UsersController {
         header("Location: {$this->baseUrl}/dashboard/users");
         exit;
     }
+
+    public function export()
+    {
+        $users = User::getAll();
+
+        // ✅ Load PhpSpreadsheet classes
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // ✅ Set headers
+        $sheet->setCellValue('A1', 'ID');
+        $sheet->setCellValue('B1', 'Full Name');
+        $sheet->setCellValue('C1', 'Email');
+        $sheet->setCellValue('D1', 'Role');
+        $sheet->setCellValue('E1', 'Status');
+        $sheet->setCellValue('F1', 'Created At');
+
+        // ✅ Fill data
+        $row = 2;
+        foreach ($users as $user) {
+            $sheet->setCellValue("A{$row}", $user['id']);
+            $sheet->setCellValue("B{$row}", $user['full_name']);
+            $sheet->setCellValue("C{$row}", $user['email']);
+            $sheet->setCellValue("D{$row}", $user['role_name'] ?? 'N/A');
+            $sheet->setCellValue("E{$row}", ucfirst($user['status']));
+            $sheet->setCellValue("F{$row}", $user['created_at'] ?? '');
+            $row++;
+        }
+
+        // ✅ Auto-size columns
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ✅ Set file headers
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="users_export.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        // ✅ Output file
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
 }
