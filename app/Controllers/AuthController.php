@@ -155,6 +155,13 @@ class AuthController {
             return;
         }
 
+        // 🚫 Check if user is inactive
+        if (isset($user['status']) && $user['status'] === 'inactive') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Your account has been banned.']);
+            return;
+        }
+
         // ✅ Use Role model to get role name
         $role = null;
         if (!empty($user['role_id'])) {
@@ -167,9 +174,8 @@ class AuthController {
             'id' => $user['id'],
             'email' => $user['email'],
             'full_name' => $user['full_name'],
-            'role' => $role, // add role here
+            'role' => $role,
         ]);
-
 
         // ✅ Send response
         echo json_encode([
@@ -179,13 +185,14 @@ class AuthController {
                 'id' => $user['id'],
                 'full_name' => $user['full_name'],
                 'email' => $user['email'],
-                'role' => $role, // send role name instead of ID
+                'role' => $role,
             ]
         ]);
     }
 
     // Web login -> session
-    public function loginWeb() {
+    public function loginWeb()
+    {
         if (session_status() === PHP_SESSION_NONE) session_start();
 
         $email = $_POST['email'] ?? '';
@@ -193,7 +200,6 @@ class AuthController {
 
         $errors = [];
 
-        // Field-level validation
         if (empty($email)) {
             $errors['email'] = 'Email is required';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -204,18 +210,26 @@ class AuthController {
             $errors['password'] = 'Password is required';
         }
 
-        // If there are validation errors, save in session and redirect
         if (!empty($errors)) {
             $_SESSION['login_errors'] = $errors;
-            $_SESSION['old_email'] = $email; // preserve email input
+            $_SESSION['old_email'] = $email;
             header("Location: {$this->baseUrl}/login");
             exit;
         }
 
-        // Authenticate
         $user = User::findByEmail($email);
+
         if (!$user || !password_verify($password, $user['password'])) {
             $_SESSION['toast_message'] = 'Invalid credentials';
+            $_SESSION['toast_type'] = 'danger';
+            $_SESSION['old_email'] = $email;
+            header("Location: {$this->baseUrl}/login");
+            exit;
+        }
+
+        // 🚫 Check if user is inactive (banned)
+        if (isset($user['status']) && $user['status'] === 'inactive') {
+            $_SESSION['toast_message'] = 'Your account has been banned. Please contact support.';
             $_SESSION['toast_type'] = 'danger';
             $_SESSION['old_email'] = $email;
             header("Location: {$this->baseUrl}/login");
