@@ -29,6 +29,11 @@ class Router {
     }
 
     public function dispatch($uri, $method) {
+        // Handle method spoofing for DELETE, PUT, PATCH
+        if ($method === 'POST' && isset($_POST['_method'])) {
+            $method = strtoupper($_POST['_method']);
+        }
+
         $method = strtoupper($method);
         $uri = strtok($uri, '?'); // Strip query string
 

@@ -33,12 +33,15 @@ $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePort
 // Services
 $router->get('/services', [ServicesController::class, 'index']);
 
-
 // Dashboard
 $router->get('/dashboard', [DashboardController::class, 'index']);
 
 // Dashboard Users
 $router->get('/dashboard/users', [UsersController::class, 'index']);
+$router->post('/dashboard/users/store', [UsersController::class, 'store']);
+$router->patch('/dashboard/users/{id}', [UsersController::class, 'update']);
+$router->patch('/dashboard/users/{id}/toggle-status', [UsersController::class, 'toggleStatus']);
+$router->delete('/dashboard/users/{id}', [UsersController::class, 'delete']);
 
 // Dashboard Role
 $router->get('/dashboard/roles', [RoleController::class, 'index']);

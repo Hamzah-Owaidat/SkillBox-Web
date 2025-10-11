@@ -9,6 +9,9 @@
   <link href="/skillbox/public/styles.css" rel="stylesheet"/>
 </head>
 <body>
+
+  <?php include __DIR__ . '/../partials/toast.php'; ?>
+
   <?php include __DIR__ . '/../partials/navbar.php'; ?>
 
   <div class="dashboard-layout">

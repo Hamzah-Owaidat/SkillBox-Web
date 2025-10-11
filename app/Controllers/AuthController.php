@@ -184,8 +184,6 @@ class AuthController {
         ]);
     }
 
-
-
     // Web login -> session
     public function loginWeb() {
         if (session_status() === PHP_SESSION_NONE) session_start();
