@@ -19,54 +19,64 @@ class User extends Model {
     }
 
     public static function create(array $data) {
-        $stmt = self::db()->prepare(
-            "INSERT INTO " . static::$table . " (full_name, email, password, role_id, status) VALUES (?, ?, ?, ?, 'active')"
-        );
+        $stmt = self::db()->prepare("
+            INSERT INTO " . static::$table . " 
+            (full_name, email, password, role_id, status, created_by) 
+            VALUES (?, ?, ?, ?, 'active', ?)
+        ");
         $stmt->execute([
             $data['full_name'],
             $data['email'],
             $data['password'],
-            $data['role_id'] ?? 2 // Default to client role
+            $data['role_id'] ?? 2,
+            $data['created_by'] ?? null
         ]);
         return self::db()->lastInsertId();
     }
 
     // ✅ NEW: Update user
     public static function update($id, array $data) {
-        // Build dynamic query based on provided data
         $fields = [];
         $values = [];
-        
+
         if (isset($data['full_name'])) {
             $fields[] = "full_name = ?";
             $values[] = $data['full_name'];
         }
-        
+
         if (isset($data['email'])) {
             $fields[] = "email = ?";
             $values[] = $data['email'];
         }
-        
+
         if (isset($data['password']) && !empty($data['password'])) {
             $fields[] = "password = ?";
             $values[] = $data['password'];
         }
-        
+
         if (isset($data['role_id'])) {
             $fields[] = "role_id = ?";
             $values[] = $data['role_id'];
         }
-        
+
+        // 👇 Add updated_by tracking
+        if (isset($data['updated_by'])) {
+            $fields[] = "updated_by = ?";
+            $values[] = $data['updated_by'];
+        }
+
+        $fields[] = "updated_at = NOW()";
+
         if (empty($fields)) {
             return false;
         }
-        
+
         $values[] = $id;
         $sql = "UPDATE " . static::$table . " SET " . implode(', ', $fields) . " WHERE id = ?";
-        
         $stmt = self::db()->prepare($sql);
         return $stmt->execute($values);
     }
+
 
     public static function delete($id) {
         $stmt = self::db()->prepare("DELETE FROM " . static::$table . " WHERE id = ?");
@@ -94,10 +104,15 @@ class User extends Model {
 
     public static function getAll() {
         $stmt = self::db()->prepare("
-            SELECT users.*, roles.name AS role_name
-            FROM users
-            LEFT JOIN roles ON users.role_id = roles.id
-            ORDER BY users.id ASC
+            SELECT u.*, 
+                r.name AS role_name, 
+                c.full_name AS created_by, 
+                up.full_name AS updated_by
+            FROM users u
+                LEFT JOIN roles r ON u.role_id = r.id
+                LEFT JOIN users c ON u.created_by = c.id
+                LEFT JOIN users up ON u.updated_by = up.id
+            ORDER BY u.id ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

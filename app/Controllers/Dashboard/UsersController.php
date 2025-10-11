@@ -74,7 +74,8 @@ class UsersController {
             'full_name' => $fullName,
             'email' => $email,
             'password' => password_hash($password, PASSWORD_BCRYPT),
-            'role_id' => $roleId
+            'role_id' => $roleId,
+            'created_by' => $_SESSION['user_id'] ?? null
         ]);
 
         if ($userId) {
@@ -137,7 +138,8 @@ class UsersController {
         $updateData = [
             'full_name' => $fullName,
             'email' => $email,
-            'role_id' => $roleId
+            'role_id' => $roleId,
+            'updated_by' => $_SESSION['user_id'] ?? null
         ];
 
         // Only update password if provided and valid
@@ -222,7 +224,10 @@ class UsersController {
         $sheet->setCellValue('C1', 'Email');
         $sheet->setCellValue('D1', 'Role');
         $sheet->setCellValue('E1', 'Status');
-        $sheet->setCellValue('F1', 'Created At');
+        $sheet->setCellValue('F1', 'Created By');
+        $sheet->setCellValue('G1', 'Updated By');
+        $sheet->setCellValue('H1', 'Created At');
+        $sheet->setCellValue('I1', 'Updated At');
 
         // ✅ Fill data
         $row = 2;
@@ -232,12 +237,15 @@ class UsersController {
             $sheet->setCellValue("C{$row}", $user['email']);
             $sheet->setCellValue("D{$row}", $user['role_name'] ?? 'N/A');
             $sheet->setCellValue("E{$row}", ucfirst($user['status']));
-            $sheet->setCellValue("F{$row}", $user['created_at'] ?? '');
+            $sheet->setCellValue("F{$row}", $user['created_by'] ?? 'null');
+            $sheet->setCellValue("G{$row}", $user['updated_by'] ?? 'null');
+            $sheet->setCellValue("H{$row}", $user['created_at'] ?? '');
+            $sheet->setCellValue("I{$row}", $user['updated_at'] ?? '');
             $row++;
         }
 
         // ✅ Auto-size columns
-        foreach (range('A', 'F') as $col) {
+        foreach (range('A', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
