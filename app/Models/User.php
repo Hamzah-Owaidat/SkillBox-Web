@@ -32,4 +32,45 @@ class User extends Model {
         return self::db()->lastInsertId();
     }
 
+    public static function getAll() {
+        $stmt = self::db()->prepare("
+            SELECT users.*, roles.name AS role_name
+            FROM users
+            LEFT JOIN roles ON users.role_id = roles.id
+            ORDER BY users.id DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function paginate($limit = 10, $page = 1)
+    {
+        $offset = ($page - 1) * $limit;
+
+        $stmt = self::db()->prepare("
+            SELECT users.*, roles.name AS role_name
+            FROM users
+            LEFT JOIN roles ON users.role_id = roles.id
+            ORDER BY users.id ASC
+            LIMIT :limit OFFSET :offset
+        ");
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get total count of users for pagination links
+        $countStmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        return [
+            'data' => $users,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'pages' => ceil($total / $limit)
+        ];
+    }
+
+
 }

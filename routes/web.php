@@ -1,5 +1,8 @@
 <?php
 use App\Controllers\AuthController;
+use App\Controllers\Dashboard\DashboardController;
+use App\Controllers\Dashboard\RoleController;
+use App\Controllers\Dashboard\UsersController;
 use App\Controllers\HomeController;
 use App\Controllers\PortfolioController;
 use App\Controllers\ServicesController;
@@ -29,3 +32,13 @@ $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePort
 
 // Services
 $router->get('/services', [ServicesController::class, 'index']);
+
+
+// Dashboard
+$router->get('/dashboard', [DashboardController::class, 'index']);
+
+// Dashboard Users
+$router->get('/dashboard/users', [UsersController::class, 'index']);
+
+// Dashboard Role
+$router->get('/dashboard/roles', [RoleController::class, 'index']);
