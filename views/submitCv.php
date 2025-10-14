@@ -92,26 +92,20 @@
             <!-- Role -->
             <div class="mb-4">
               <label class="form-label fw-semibold d-block">Select Your Role</label>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" 
-                       type="radio" 
-                       name="role" 
-                       id="worker" 
-                       value="worker" 
-                       <?= isset($portfolio) && $portfolio['requested_role'] === 'worker' ? 'checked' : '' ?>
-                       required>
-                <label class="form-check-label" for="worker">Attends Workers</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" 
-                       type="radio" 
-                       name="role" 
-                       id="supervisor" 
-                       value="supervisor"
-                       <?= isset($portfolio) && $portfolio['requested_role'] === 'supervisor' ? 'checked' : '' ?>
-                       required>
-                <label class="form-check-label" for="supervisor">Attends Supervisor</label>
-              </div>
+              <select name="requested_role" class="form-select" required>
+                  <option value="">-- Select Role --</option>
+                  <?php foreach ($roles as $role): ?>
+                      <option value="<?= htmlspecialchars($role['id']) ?>"
+                          <?php 
+                          // For edit mode, check if this role matches the portfolio's requested role
+                          if (isset($portfolio) && isset($portfolio['requested_role_id'])) {
+                              echo $portfolio['requested_role_id'] == $role['id'] ? 'selected' : '';
+                          }
+                          ?>>
+                          <?= htmlspecialchars(ucfirst($role['name'])) ?>
+                      </option>
+                  <?php endforeach; ?>
+              </select>
             </div>
 
             <!-- Submit Button -->

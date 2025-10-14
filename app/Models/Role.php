@@ -18,8 +18,7 @@ class Role extends Model {
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    // Alias for consistency
+    
     public static function find($id) {
         return self::findById($id);
     }

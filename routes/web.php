@@ -1,6 +1,7 @@
 <?php
 use App\Controllers\AuthController;
 use App\Controllers\Dashboard\DashboardController;
+use App\Controllers\Dashboard\PortfoliosController;
 use App\Controllers\Dashboard\RoleController;
 use App\Controllers\Dashboard\UsersController;
 use App\Controllers\HomeController;
@@ -51,3 +52,10 @@ $router->post('/dashboard/roles/store', [RoleController::class, 'store']);
 $router->patch('/dashboard/roles/{id}', [RoleController::class, 'update']);
 $router->delete('/dashboard/roles/{id}', [RoleController::class, 'delete']);
 $router->get('/dashboard/roles/export', [RoleController::class, 'export']);
+
+// Dashboard Portfolios
+$router->get('/dashboard/portfolios', [PortfoliosController::class, 'index']);
+$router->get('/dashboard/portfolios/export', [PortfoliosController::class, 'export']);
+$router->patch('/dashboard/portfolios/{id}/accept', [PortfoliosController::class, 'accept']);
+$router->patch('/dashboard/portfolios/{id}/reject', [PortfoliosController::class, 'reject']);
+$router->delete('/dashboard/portfolios/{id}', [PortfoliosController::class, 'delete']);

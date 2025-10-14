@@ -3,82 +3,77 @@ namespace App\Controllers;
 
 use App\Core\AuthMiddleware;
 use App\Core\Database;
+use App\Models\Portfolio;
+use App\Models\Role;
 
 class PortfolioController {
     protected $baseUrl = '/skillbox/public';
 
     public function index() {
+        $allRoles = Role::getAll();
+
+        // Only keep worker and supervisor
+        $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker', 'supervisor']));
         require __DIR__ . '/../../views/submitCv.php';
     }
 
-    public function store() {
-        // Start session if not started
+    public function store()
+    {
         if (session_status() === PHP_SESSION_NONE) session_start();
-
-        // Check if user is logged in
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
             echo json_encode(['error' => 'Unauthorized']);
             exit;
         }
 
-        $user_id = $_SESSION['user_id'];
+        // Get the role ID from form
+        $roleId = $_POST['requested_role'] ?? null;
+        
 
-        // Collect & sanitize POST data
-        $full_name = htmlspecialchars($_POST['fullname'] ?? '');
-        $email     = htmlspecialchars($_POST['email'] ?? '');
-        $phone     = htmlspecialchars($_POST['phone'] ?? '');
-        $address   = htmlspecialchars($_POST['address'] ?? '');
-        $linkedin  = htmlspecialchars($_POST['linkedin'] ?? '');
-        $role      = $_POST['role'] ?? '';
+        if (!$roleId) {
+            $_SESSION['toast_message'] = 'Invalid role selected';
+            $_SESSION['toast_type'] = 'danger';
+            header("Location: {$this->baseUrl}/portfolio");
+            exit;
+        }
 
-        // Handle file upload
-        $attachment_path = null;
+        $data = [
+            'user_id'        => $_SESSION['user_id'],
+            'full_name'      => htmlspecialchars($_POST['fullname'] ?? ''),
+            'email'          => htmlspecialchars($_POST['email'] ?? ''),
+            'phone'          => htmlspecialchars($_POST['phone'] ?? ''),
+            'address'        => htmlspecialchars($_POST['address'] ?? ''),
+            'linkedin'       => htmlspecialchars($_POST['linkedin'] ?? ''),
+            'requested_role' => $roleId, // Store the role NAME not ID
+            'attachment_path'=> null,
+        ];
+
+        // Upload file
         if (!empty($_FILES['attachment']['name'])) {
             $uploadDir = __DIR__ . '/../../public/uploads/portfolios/';
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
             $fileName = time() . '_' . basename($_FILES['attachment']['name']);
-            $targetFile = $uploadDir . $fileName;
+            $target = $uploadDir . $fileName;
+            $type = strtolower(pathinfo($target, PATHINFO_EXTENSION));
 
-            $fileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
-            if ($fileType !== 'pdf') {
-                echo json_encode(['error' => 'Only PDF files allowed']);
+            if ($type !== 'pdf') {
+                $_SESSION['toast_message'] = 'Only PDF files allowed';
+                $_SESSION['toast_type'] = 'danger';
+                header("Location: {$this->baseUrl}/portfolio");
                 exit;
             }
 
-            if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetFile)) {
-                $attachment_path = "public/uploads/portfolios/$fileName"; // relative path
-            } else {
-                echo json_encode(['error' => 'Failed to upload file']);
-                exit;
+            if (move_uploaded_file($_FILES['attachment']['tmp_name'], $target)) {
+                $data['attachment_path'] = "public/uploads/portfolios/$fileName";
             }
         }
 
-        // Save to database
-        $db = Database::getConnection();
-        $stmt = $db->prepare("
-            INSERT INTO portfolios
-                (user_id, full_name, email, phone, address, linkedin, attachment_path, requested_role)
-            VALUES
-                (:user_id, :full_name, :email, :phone, :address, :linkedin, :attachment_path, :requested_role)
-        ");
+        Portfolio::create($data);
 
-        $stmt->execute([
-            ':user_id'        => $user_id,
-            ':full_name'      => $full_name,
-            ':email'          => $email,
-            ':phone'          => $phone,
-            ':address'        => $address,
-            ':linkedin'       => $linkedin,
-            ':attachment_path'=> $attachment_path,
-            ':requested_role' => $role
-        ]);
-
-        // Redirect or send JSON response
         $_SESSION['toast_message'] = 'Portfolio submitted successfully';
         $_SESSION['toast_type'] = 'success';
-        header("Location: {$this->baseUrl}/");        
+        header("Location: {$this->baseUrl}/");
     }
 
     // Delete a portfolio (only if pending)
@@ -94,15 +89,11 @@ class PortfolioController {
             exit;
         }
 
-        $db = Database::getConnection();
-        $stmt = $db->prepare("DELETE FROM portfolios WHERE id = :id AND user_id = :user_id AND status = 'pending'");
-        $stmt->execute([':id' => $id, ':user_id' => $userId]);
-
-        if ($stmt->rowCount() > 0) {
+        if (Portfolio::deletePendingByUser($id, $userId)) {
             $_SESSION['toast_message'] = 'Portfolio deleted successfully';
             $_SESSION['toast_type'] = 'success';
         } else {
-            $_SESSION['toast_message'] = 'Cannot delete portfolio (only pending portfolios can be deleted)';
+            $_SESSION['toast_message'] = 'Cannot delete portfolio (only pending ones can be deleted)';
             $_SESSION['toast_type'] = 'warning';
         }
 
@@ -110,7 +101,7 @@ class PortfolioController {
         exit;
     }
 
-        // Show edit form (reuses submit-cv view)
+    // Show edit form (reuses submit-cv view)
     public function showEditForm($id) {
         AuthMiddleware::web();
         $user = $GLOBALS['auth_user'];
@@ -131,13 +122,26 @@ class PortfolioController {
             exit;
         }
 
+        // Convert role name back to ID for the form
+        if ($portfolio['requested_role']) {
+            $role = Role::findByName($portfolio['requested_role']);
+            if ($role) {
+                $portfolio['requested_role_id'] = $role['id'];
+            }
+        }
+
+        // Get available roles for the form
+        $allRoles = Role::getAll();
+        $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker', 'supervisor']));
+
         // Pass portfolio data to view
         $isEdit = true;
         require __DIR__ . '/../../views/submitCv.php';
     }
 
     // Update portfolio
-    public function updatePortfolio($id) {
+    public function updatePortfolio($id)
+    {
         AuthMiddleware::web();
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
@@ -150,76 +154,63 @@ class PortfolioController {
         $phone = htmlspecialchars($_POST['phone'] ?? '');
         $address = htmlspecialchars($_POST['address'] ?? '');
         $linkedin = htmlspecialchars($_POST['linkedin'] ?? '');
-        $role = $_POST['role'] ?? '';
+        $roleId = $_POST['requested_role'] ?? '';
 
-        if (empty($full_name) || empty($email) || empty($phone) || empty($address) || empty($role)) {
+        // Convert role ID to name
+        $roleName = null;
+        if ($roleId) {
+            $role = Role::findById($roleId);
+            if ($role && in_array($role['name'], ['worker', 'supervisor'])) {
+                $roleName = $role['name'];
+            }
+        }
+
+        if (empty($full_name) || empty($email) || empty($phone) || empty($address) || !$roleName) {
             $_SESSION['toast_message'] = 'All required fields must be filled';
             $_SESSION['toast_type'] = 'danger';
-            header('Location: /skillbox/public/portfolio/edit/' . $id);
+            header("Location: /skillbox/public/portfolio/edit/$id");
             exit;
         }
 
-        $db = Database::getConnection();
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['toast_message'] = 'Invalid email format';
+            $_SESSION['toast_type'] = 'danger';
+            header("Location: /skillbox/public/portfolio/edit/$id");
+            exit;
+        }
 
-        // Handle file upload if new file is provided
+        // Handle file upload
         $attachmentPath = null;
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = __DIR__ . '/../../public/uploads/';
-            if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
+            $uploadDir = __DIR__ . '/../../public/uploads/portfolios/';
+            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
 
             $fileName = time() . '_' . basename($_FILES['attachment']['name']);
-            $targetPath = $uploadDir . $fileName;
+            $targetPath = "$uploadDir$fileName";
 
             if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
-                $attachmentPath = 'uploads/' . $fileName;
+                $attachmentPath = "public/uploads/portfolios/$fileName";
             }
         }
 
-        // Build update query
+        // Build the data array for update
+        $data = [
+            'full_name' => $full_name,
+            'email' => $email,
+            'phone' => $phone,
+            'address' => $address,
+            'linkedin' => $linkedin,
+            'requested_role' => $roleName // Store the role NAME
+        ];
+
         if ($attachmentPath) {
-            $stmt = $db->prepare("
-                UPDATE portfolios
-                SET full_name = :full_name, email = :email, phone = :phone, 
-                    address = :address, linkedin = :linkedin, requested_role = :role,
-                    attachment_path = :attachment_path, updated_at = NOW()
-                WHERE id = :id AND user_id = :user_id AND status = 'pending'
-            ");
-            $params = [
-                ':full_name' => $full_name,
-                ':email' => $email,
-                ':phone' => $phone,
-                ':address' => $address,
-                ':linkedin' => $linkedin,
-                ':role' => $role,
-                ':attachment_path' => $attachmentPath,
-                ':id' => $id,
-                ':user_id' => $userId
-            ];
-        } else {
-            $stmt = $db->prepare("
-                UPDATE portfolios
-                SET full_name = :full_name, email = :email, phone = :phone, 
-                    address = :address, linkedin = :linkedin, requested_role = :role,
-                    updated_at = NOW()
-                WHERE id = :id AND user_id = :user_id AND status = 'pending'
-            ");
-            $params = [
-                ':full_name' => $full_name,
-                ':email' => $email,
-                ':phone' => $phone,
-                ':address' => $address,
-                ':linkedin' => $linkedin,
-                ':role' => $role,
-                ':id' => $id,
-                ':user_id' => $userId
-            ];
+            $data['attachment_path'] = $attachmentPath;
         }
 
-        $stmt->execute($params);
+        // Use the model method
+        $updated = Portfolio::updatePendingByUser($id, $userId, $data);
 
-        if ($stmt->rowCount() > 0) {
+        if ($updated) {
             $_SESSION['toast_message'] = 'Portfolio updated successfully';
             $_SESSION['toast_type'] = 'success';
         } else {
