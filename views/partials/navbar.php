@@ -59,7 +59,38 @@ $fullName = $_SESSION['full_name'] ?? '';
               <li><a class="dropdown-item" href="<?= $baseUrl ?>/logout">Logout</a></li>
             </ul>
           </li>
+
+          <!-- Supervisor Links -->
+        <?php elseif($role === 'supervisor'): ?>
+          <li class="nav-item"><a href="<?= $baseUrl ?>/" class="nav-link">Home</a></li>
+          <li class="nav-item"><a href="<?= $baseUrl ?>/dashboard" class="nav-link">Dashboard</a></li>
+
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <?= htmlspecialchars($fullName) ?>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="<?= $baseUrl ?>/profile">Profile</a></li>
+              <li><a class="dropdown-item" href="<?= $baseUrl ?>/logout">Logout</a></li>
+            </ul>
+          </li>
+
+          <!-- Worker Links -->
+        <?php elseif($role === 'worker'): ?>
+          <li class="nav-item"><a href="<?= $baseUrl ?>/" class="nav-link">Home</a></li>
+          <li class="nav-item"><a href="<?= $baseUrl ?>/dashboard" class="nav-link">Dashboard</a></li>
+
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+              <?= htmlspecialchars($fullName) ?>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="<?= $baseUrl ?>/profile">Profile</a></li>
+              <li><a class="dropdown-item" href="<?= $baseUrl ?>/logout">Logout</a></li>
+            </ul>
+          </li>
         <?php endif; ?>
+
 
       </ul>
     </div>
