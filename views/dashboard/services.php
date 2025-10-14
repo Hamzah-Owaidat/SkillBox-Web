@@ -25,6 +25,7 @@ ob_start();
           <th>Icon/Emoji</th>
           <th>Title</th>
           <th>Description</th>
+          <th>Supervisors</th>
           <th>Created By</th>
           <th>Updated By</th>
           <th>Created At</th>
@@ -46,8 +47,17 @@ ob_start();
               </td>
               <td><?= htmlspecialchars($service['title']) ?></td>
               <td><?= htmlspecialchars(substr($service['description'], 0, 60)) ?>...</td>
+              <td>
+                <?php if (!empty($service['supervisors'])): ?>
+                  <span class="badge bg-info text-dark">
+                    <i class="fas fa-users me-1"></i><?= count($service['supervisors']) ?>
+                  </span>
+                <?php else: ?>
+                  <span class="text-muted">No Supervisors</span>
+                <?php endif; ?>
+              </td>
               <td><?= htmlspecialchars($service['created_by_name'] ?? 'N/A') ?></td>
-              <td><?= htmlspecialchars($service['updated_by_name'] ?? 'Null') ?></td>
+              <td><?= htmlspecialchars($service['updated_by_name'] ?? 'N/A') ?></td>
               <td><?= date('Y-m-d H:i', strtotime($service['created_at'])) ?></td>
               <td><?= date('Y-m-d H:i', strtotime($service['updated_at'])) ?></td>
               <td class="text-center">
@@ -101,6 +111,20 @@ ob_start();
               <strong><i class="fas fa-align-left me-2"></i>Description:</strong>
               <p><?= htmlspecialchars($service['description']) ?></p>
             </div>
+            <div class="col-md-12 mb-3">
+              <strong><i class="fas fa-users me-2"></i>Supervisors:</strong>
+              <?php if (!empty($service['supervisors'])): ?>
+                <div class="mt-2">
+                  <?php foreach ($service['supervisors'] as $supervisor): ?>
+                    <span class="badge bg-primary me-2 mb-2">
+                      <i class="fas fa-user me-1"></i><?= htmlspecialchars($supervisor['full_name']) ?>
+                    </span>
+                  <?php endforeach; ?>
+                </div>
+              <?php else: ?>
+                <p class="text-muted mt-2">No supervisors assigned</p>
+              <?php endif; ?>
+            </div>
             <div class="col-md-6 mb-3">
               <strong><i class="fas fa-user me-2"></i>Created By:</strong>
               <p><?= htmlspecialchars($service['created_by_name'] ?? 'N/A') ?></p>
@@ -119,7 +143,9 @@ ob_start();
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              <i class="fas fa-times me-2"></i>Close
+            </button>
           </div>
           <?php
           $modalConfig['content'] = ob_get_clean();
@@ -135,6 +161,11 @@ ob_start();
               'content' => ''
           ];
           ob_start();
+          
+          // Get current supervisor IDs
+          $currentSupervisorIds = array_map(function($sup) {
+              return $sup['id'];
+          }, $service['supervisors'] ?? []);
           ?>
           <form method="POST" action="<?= $this->baseUrl ?>/dashboard/services/<?= $service['id'] ?>">
             <input type="hidden" name="_method" value="PATCH">
@@ -167,6 +198,24 @@ ob_start();
                       required
                       placeholder="Enter service description"><?= htmlspecialchars($service['description']) ?></textarea>
               </div>
+              <div class="col-md-12 mb-3">
+                <label class="form-label"><i class="fas fa-users me-2"></i>Assign Supervisors</label>
+                <select class="form-select" name="supervisors[]" multiple size="6">
+                  <?php if (empty($allSupervisors)): ?>
+                    <option disabled>No supervisors available</option>
+                  <?php else: ?>
+                    <?php foreach ($allSupervisors as $supervisor): ?>
+                      <option value="<?= $supervisor['id'] ?>" 
+                              <?= in_array($supervisor['id'], $currentSupervisorIds) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($supervisor['full_name']) ?> - <?= htmlspecialchars($supervisor['email']) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </select>
+                <small class="text-muted d-block mt-1">
+                  <i class="fas fa-info-circle me-1"></i>Hold Ctrl (Windows) or Cmd (Mac) to select multiple supervisors
+                </small>
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -184,7 +233,7 @@ ob_start();
 
         <?php endforeach; ?>
       <?php else: ?>
-        <tr><td colspan="9" class="text-center py-4">
+        <tr><td colspan="10" class="text-center py-4">
           <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
           <p class="text-muted">No Services found.</p>
         </td></tr>
@@ -252,6 +301,23 @@ ob_start();
             rows="4"
             required
             placeholder="Enter service description"></textarea>
+    </div>
+    <div class="col-md-12 mb-3">
+      <label class="form-label"><i class="fas fa-users me-2"></i>Assign Supervisors</label>
+      <select class="form-select" name="supervisors[]" multiple size="6">
+        <?php if (empty($allSupervisors)): ?>
+          <option disabled>No supervisors available</option>
+        <?php else: ?>
+          <?php foreach ($allSupervisors as $supervisor): ?>
+            <option value="<?= $supervisor['id'] ?>">
+              <?= htmlspecialchars($supervisor['full_name']) ?> - <?= htmlspecialchars($supervisor['email']) ?>
+            </option>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </select>
+      <small class="text-muted d-block mt-1">
+        <i class="fas fa-info-circle me-1"></i>Hold Ctrl (Windows) or Cmd (Mac) to select multiple supervisors
+      </small>
     </div>
   </div>
   <div class="modal-footer">
