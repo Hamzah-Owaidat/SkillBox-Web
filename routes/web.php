@@ -4,9 +4,10 @@ use App\Controllers\Dashboard\DashboardController;
 use App\Controllers\Dashboard\PortfoliosController;
 use App\Controllers\Dashboard\RoleController;
 use App\Controllers\Dashboard\UsersController;
+use App\Controllers\Dashboard\ServicesController;
 use App\Controllers\HomeController;
 use App\Controllers\PortfolioController;
-use App\Controllers\ServicesController;
+use App\Controllers\ServiceController;
 use App\Controllers\UserController;
 
 // Auth
@@ -32,7 +33,7 @@ $router->get('/portfolio/edit/{id}', [PortfolioController::class, 'showEditForm'
 $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePortfolio']); // NEW: Update portfolio
 
 // Services
-$router->get('/services', [ServicesController::class, 'index']);
+$router->get('/services', [ServiceController::class, 'index']);
 
 // Dashboard
 $router->get('/dashboard', [DashboardController::class, 'index']);
@@ -59,3 +60,10 @@ $router->get('/dashboard/portfolios/export', [PortfoliosController::class, 'expo
 $router->patch('/dashboard/portfolios/{id}/accept', [PortfoliosController::class, 'accept']);
 $router->patch('/dashboard/portfolios/{id}/reject', [PortfoliosController::class, 'reject']);
 $router->delete('/dashboard/portfolios/{id}', [PortfoliosController::class, 'delete']);
+
+// Dashboard Services
+$router->get('/dashboard/services', [ServicesController::class, 'index']);
+$router->post('/dashboard/services/store', [ServicesController::class, 'store']);
+$router->patch('/dashboard/services/{id}', [ServicesController::class, 'update']);
+$router->delete('/dashboard/services/{id}', [ServicesController::class, 'delete']);
+$router->get('/dashboard/services/export', [ServicesController::class, 'export']);
