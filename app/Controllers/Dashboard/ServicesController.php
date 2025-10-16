@@ -1,7 +1,10 @@
 <?php
 namespace App\Controllers\Dashboard;
 
+require_once __DIR__ . '/../../Helpers/helpers.php';
+
 use App\Models\Service;
+use App\Helpers\NotificationHelper;
 
 class ServicesController {
     protected $baseUrl = '/skillbox/public';
@@ -78,6 +81,15 @@ class ServicesController {
                 $_SESSION['toast_message'] = 'Service created successfully (no supervisors assigned).';
             }
             $_SESSION['toast_type'] = 'success';
+            
+            // ===== SEND NOTIFICATION TO ALL CLIENTS =====
+            $this->notifyServiceAction('add', $title, [
+                'id' => $serviceId,
+                'title' => $title,
+                'description' => $description,
+                'image' => $image
+            ]);
+            
         } else {
             $_SESSION['toast_message'] = 'Failed to create service.';
             $_SESSION['toast_type'] = 'danger';
@@ -133,6 +145,15 @@ class ServicesController {
                 $_SESSION['toast_message'] = 'Service updated but failed to assign supervisors.';
             }
             $_SESSION['toast_type'] = 'success';
+            
+            // ===== SEND NOTIFICATION TO ALL CLIENTS =====
+            $this->notifyServiceAction('edit', $title, [
+                'id' => $id,
+                'title' => $title,
+                'description' => $description,
+                'image' => $image
+            ]);
+            
         } else {
             $_SESSION['toast_message'] = 'Failed to update service.';
             $_SESSION['toast_type'] = 'danger';
@@ -146,9 +167,20 @@ class ServicesController {
      * Delete service (supervisors automatically deleted via cascade)
      */
     public function delete($id) {
+        // Get service details before deletion for notification
+        $service = Service::findById($id);
+        $serviceTitle = $service['title'] ?? 'Unknown Service';
+        
         if (Service::delete($id)) {
             $_SESSION['toast_message'] = 'Service and its supervisor assignments deleted successfully.';
             $_SESSION['toast_type'] = 'success';
+            
+            // ===== SEND NOTIFICATION TO ALL CLIENTS =====
+            $this->notifyServiceAction('delete', $serviceTitle, [
+                'id' => $id,
+                'title' => $serviceTitle
+            ]);
+            
         } else {
             $_SESSION['toast_message'] = 'Failed to delete service.';
             $_SESSION['toast_type'] = 'danger';
@@ -234,5 +266,60 @@ class ServicesController {
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
+    }
+    
+    /**
+     * Helper method to send notifications for service actions
+     * 
+     * @param string $action Action type: 'add', 'edit', 'delete'
+     * @param string $serviceTitle Service title
+     * @param array $serviceData Additional service data
+     */
+    protected function notifyServiceAction($action, $serviceTitle, $serviceData = []) {
+        try {
+            // Get all client user IDs (excluding admins)
+            $clientIds = NotificationHelper::getAllClientIds();
+            \debug_log('Client IDs: ' . json_encode($clientIds));
+            
+            if (empty($clientIds)) {
+                return; // No clients to notify
+            }
+            
+            // Prepare notification based on action
+            $notifications = [
+                'add' => [
+                    'title' => 'New Service Available',
+                    'message' => "A new service '{$serviceTitle}' has been added to the platform.",
+                    'type' => 'add'
+                ],
+                'edit' => [
+                    'title' => 'Service Updated',
+                    'message' => "The service '{$serviceTitle}' has been updated with new information.",
+                    'type' => 'edit'
+                ],
+                'delete' => [
+                    'title' => 'Service Removed',
+                    'message' => "The service '{$serviceTitle}' has been removed from the platform.",
+                    'type' => 'delete'
+                ]
+            ];
+            
+            $notificationData = $notifications[$action] ?? $notifications['add'];
+            
+            // Send notification to all clients
+            NotificationHelper::send(
+                $this->adminId,
+                $clientIds,
+                $notificationData['title'],
+                $notificationData['message'],
+                $notificationData['type'],
+                true,
+                true 
+            );
+            
+        } catch (\Exception $e) {
+            // Log error but don't stop execution
+            error_log("Failed to send service notification: " . $e->getMessage());
+        }
     }
 }

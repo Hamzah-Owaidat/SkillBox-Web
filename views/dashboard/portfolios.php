@@ -13,7 +13,7 @@ ob_start();
     </div>
 </div>
 
-<div class="card p-4">
+<div class="card p-3">
   <!-- Add this wrapper div -->
   <div class="table-responsive-custom">
     <table class="table table-hover align-middle">
@@ -173,7 +173,7 @@ ob_start();
   </div> <!-- Close table-responsive-custom div -->
 
  <?php if ($pagination['pages'] > 1): ?>
-  <div class="d-flex justify-content-center mt-4">
+  <div class="d-flex justify-content-center mt-3">
       <nav>
           <ul class="pagination">
               <li class="page-item <?= $pagination['page'] == 1 ? 'disabled' : '' ?>">

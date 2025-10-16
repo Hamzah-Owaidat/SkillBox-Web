@@ -17,7 +17,7 @@ ob_start();
     </div>
 </div>
 
-<div class="card p-4">
+<div class="card p-3">
   <table class="table table-hover align-middle">
     <thead class="table-light">
       <tr>
@@ -108,7 +108,7 @@ ob_start();
 
   <!-- Pagination -->
   <?php if ($pagination['pages'] > 1): ?>
-  <div class="d-flex justify-content-center mt-4">
+  <div class="d-flex justify-content-center mt-2">
       <nav>
           <ul class="pagination">
               <li class="page-item <?= $pagination['page'] == 1 ? 'disabled' : '' ?>">
