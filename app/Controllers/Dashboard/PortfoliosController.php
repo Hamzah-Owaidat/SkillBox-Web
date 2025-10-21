@@ -4,6 +4,8 @@ namespace App\Controllers\Dashboard;
 use App\Models\Portfolio;
 use App\Models\Role;
 use App\Helpers\NotificationHelper;
+use App\Models\Activity;
+
 
 class PortfoliosController {
     protected $baseUrl = '/skillbox/public';
@@ -72,6 +74,12 @@ class PortfoliosController {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
+        Activity::log(
+            $this->adminId,
+            'portfolio_export',
+            'Exported all portfolios to Excel'
+        );
+
         // Download
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="portfolios_export_' . date('Y-m-d_H-i-s') . '.xlsx"');
@@ -110,6 +118,12 @@ class PortfoliosController {
             $_SESSION['toast_message'] = 'Portfolio approved and user role updated successfully.';
             $_SESSION['toast_type'] = 'success';
 
+            Activity::log(
+                $this->adminId,
+                'portfolio_approve',
+                "Approved portfolio ID: {$id} for user ID: {$portfolio['user_id']}, assigned role ID: {$roleId}"
+            );
+
             // ===== SEND PRIVATE NOTIFICATION TO SPECIFIC USER =====
             NotificationHelper::send(
                 $this->adminId,              // Sender (admin)
@@ -146,6 +160,12 @@ class PortfoliosController {
         if ($result) {
             $_SESSION['toast_message'] = 'Portfolio rejected.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $this->adminId,
+                'portfolio_reject',
+                "Rejected portfolio ID: {$id} for user ID: {$portfolio['user_id']}"
+            );
             
             // ===== SEND PRIVATE NOTIFICATION TO SPECIFIC USER =====
             NotificationHelper::send(
@@ -180,6 +200,12 @@ class PortfoliosController {
             
             $_SESSION['toast_message'] = 'Portfolio deleted successfully.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $this->adminId,
+                'portfolio_delete',
+                "Deleted portfolio ID: {$id}, user ID: {$portfolio['user_id']}"
+            );
         } else {
             $_SESSION['toast_message'] = 'Failed to delete portfolio.';
             $_SESSION['toast_type'] = 'error';

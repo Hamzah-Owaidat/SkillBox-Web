@@ -143,4 +143,72 @@ class User extends Model {
             'pages' => ceil($total / $limit)
         ];
     }
+
+    public static function getCount() {
+        $stmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
+        return (int)$stmt->fetch(\PDO::FETCH_ASSOC)['total'];
+    }
+
+    public static function getCountByRole($roleId) {
+        $stmt = self::db()->prepare("SELECT COUNT(*) as total FROM " . static::$table . " WHERE role_id = ?");
+        $stmt->execute([$roleId]);
+        return (int)$stmt->fetch(\PDO::FETCH_ASSOC)['total'];
+    }
+
+    public static function findWithRole($id) {
+        $stmt = self::db()->prepare("
+            SELECT u.*, r.name AS role_name
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            WHERE u.id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public static function updateProfile($id, array $data) {
+        $fields = [];
+        $values = [];
+    
+        if (!empty($data['full_name'])) {
+            $fields[] = "full_name = ?";
+            $values[] = $data['full_name'];
+        }
+    
+        if (!empty($data['email'])) {
+            $fields[] = "email = ?";
+            $values[] = $data['email'];
+        }
+    
+        if (!empty($data['password'])) {
+            $fields[] = "password = ?";
+            $values[] = $data['password'];
+        }
+    
+        if (empty($fields)) {
+            return false; // Nothing to update
+        }
+    
+        $values[] = $id;
+        $sql = "UPDATE " . static::$table . " SET " . implode(', ', $fields) . ", updated_at = NOW() WHERE id = ?";
+        $stmt = self::db()->prepare($sql);
+        return $stmt->execute($values);
+    }
+
+    public static function getPortfolios($userId) {
+        $stmt = self::db()->prepare("SELECT * FROM portfolios WHERE user_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function verifyPassword($userId, $password) {
+        $stmt = self::db()->prepare("SELECT password FROM " . static::$table . " WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) return false;
+        return password_verify($password, $user['password']);
+    }
+    
+    
 }

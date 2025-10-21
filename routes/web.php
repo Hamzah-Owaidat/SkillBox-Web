@@ -35,8 +35,12 @@ $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePort
 // Services
 $router->get('/services', [ServiceController::class, 'index']);
 
+// =================== START DASHBOARD ROUTES ===================
 // Dashboard
 $router->get('/dashboard', [DashboardController::class, 'index']);
+$router->get('/dashboard/activities/export', [DashboardController::class, 'export']);
+
+
 
 // Dashboard Users
 $router->get('/dashboard/users', [UsersController::class, 'index']);

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../Helpers/helpers.php';
 
 use App\Models\Service;
 use App\Helpers\NotificationHelper;
+use App\Models\Activity;
 
 class ServicesController {
     protected $baseUrl = '/skillbox/public';
@@ -66,6 +67,12 @@ class ServicesController {
             
             $_SESSION['toast_message'] = 'Service created successfully.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $this->adminId,
+                'service_create',
+                "Created service: {$title} (ID: {$serviceId})"
+            );
             
             // ===== SEND NOTIFICATION TO ALL CLIENTS =====
             $this->notifyServiceAction('add', $title, [
@@ -118,6 +125,12 @@ class ServicesController {
             
             $_SESSION['toast_message'] = 'Service updated successfully.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $this->adminId,
+                'service_update',
+                "Updated service: {$title} (ID: {$id})"
+            );
             
             // ===== SEND NOTIFICATION TO ALL CLIENTS =====
             $this->notifyServiceAction('edit', $title, [
@@ -147,6 +160,12 @@ class ServicesController {
         if (Service::delete($id)) {
             $_SESSION['toast_message'] = 'Service deleted successfully.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $this->adminId,
+                'service_delete',
+                "Deleted service: {$serviceTitle} (ID: {$id})"
+            );        
             
             // ===== SEND NOTIFICATION TO ALL CLIENTS =====
             $this->notifyServiceAction('delete', $serviceTitle, [
@@ -214,6 +233,12 @@ class ServicesController {
         foreach (range('A', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
+
+        Activity::log(
+            $this->adminId,
+            'service_export',
+            'Exported all services to Excel'
+        );
 
         // Set HTTP headers for file download
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

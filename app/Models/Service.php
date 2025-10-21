@@ -124,4 +124,15 @@ class Service extends Model
             'pages' => ceil($total / $limit)
         ];
     }
+
+    public static function getCount() {
+        $stmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
+        return (int)$stmt->fetch(\PDO::FETCH_ASSOC)['total'];
+    }
+
+    public static function getRecent($limit = 5) {
+        $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " ORDER BY created_at DESC LIMIT ?");
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

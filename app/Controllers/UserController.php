@@ -2,18 +2,20 @@
 namespace App\Controllers;
 
 use App\Core\AuthMiddleware;
-use App\Core\Database;
+use App\Models\User;
 use App\Models\Role;
+use App\Models\Activity;
 
 class UserController {
 
+    /**
+     * Return the authenticated user for API
+     */
     public function me() {
-        // Enforce JWT auth for API
         AuthMiddleware::api();
 
         $user = $GLOBALS['auth_user'];
 
-        // Get role name using Role model
         $roleName = null;
         if (!empty($user['role_id'])) {
             $roleData = Role::findById($user['role_id']);
@@ -27,33 +29,33 @@ class UserController {
             'role' => $roleName
         ]);
     }
-    // Show profile page
+
+    /**
+     * Show profile page
+     */
     public function index() {
-        // Ensure web session auth
         AuthMiddleware::web();
+
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
 
-        // Fetch portfolios
-        $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT * FROM portfolios WHERE user_id = :user_id ORDER BY created_at DESC");
-        $stmt->execute([':user_id' => $userId]);
-        $portfolios = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        // Fetch user portfolios via User model
+        $portfolios = User::getPortfolios($userId);
 
-        // Load view
         require __DIR__ . '/../../views/profile.php';
     }
 
-    // Update profile
+    /**
+     * Update profile
+     */
     public function update() {
-        // Web session auth
         AuthMiddleware::web();
+
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
 
         if (session_status() === PHP_SESSION_NONE) session_start();
 
-        // Collect POST data
         $full_name = htmlspecialchars($_POST['full_name'] ?? '');
         $email = htmlspecialchars($_POST['email'] ?? '');
         $old_password = $_POST['old_password'] ?? '';
@@ -66,16 +68,13 @@ class UserController {
             exit;
         }
 
-        $db = Database::getConnection();
-
-        // Prepare update
-        $params = [
-            ':full_name' => $full_name,
-            ':email' => $email,
-            ':id' => $userId
+        $updateData = [
+            'full_name' => $full_name,
+            'email' => $email,
+            'updated_by' => $userId
         ];
 
-        $passwordSql = '';
+        // Handle password change
         if (!empty($new_password)) {
             if (empty($old_password)) {
                 $_SESSION['toast_message'] = 'Old password required to change password';
@@ -84,37 +83,37 @@ class UserController {
                 exit;
             }
 
-            // Verify old password
-            $stmt = $db->prepare("SELECT password FROM users WHERE id = :id");
-            $stmt->execute([':id' => $userId]);
-            $userData = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-            if (!password_verify($old_password, $userData['password'])) {
+            // Verify old password via User model
+            if (!User::verifyPassword($userId, $old_password)) {
                 $_SESSION['toast_message'] = 'Old password is incorrect';
                 $_SESSION['toast_type'] = 'danger';
                 header('Location: /skillbox/public/profile');
                 exit;
             }
 
-            $hashedPassword = password_hash($new_password, PASSWORD_DEFAULT);
-            $passwordSql = ", password = :password";
-            $params[':password'] = $hashedPassword;
+            $updateData['password'] = password_hash($new_password, PASSWORD_DEFAULT);
         }
 
-        // Execute update
-        $stmt = $db->prepare("
-            UPDATE users
-            SET full_name = :full_name, email = :email $passwordSql
-            WHERE id = :id
-        ");
-        $stmt->execute($params);
+        // Update user via model
+        $success = User::updateProfile($userId, $updateData);
 
-        $_SESSION['toast_message'] = 'Profile updated successfully';
-        $_SESSION['toast_type'] = 'success';
+        if ($success) {
+            
+            $_SESSION['toast_message'] = 'Profile updated successfully';
+            $_SESSION['toast_type'] = 'success';
+
+            // Log activity
+            Activity::Log(
+                $userId, 
+                "Updated profile",
+                "User Updated his profile"
+            );
+        } else {
+            $_SESSION['toast_message'] = 'No changes were made';
+            $_SESSION['toast_type'] = 'info';
+        }
+
         header('Location: /skillbox/public/profile');
         exit;
     }
-
-    
-
 }

@@ -2,6 +2,7 @@
 namespace App\Controllers\Dashboard;
 
 use App\Models\Role;
+use App\Models\Activity;
 use PDO;
 
 class RoleController {
@@ -45,6 +46,12 @@ class RoleController {
         if ($roleId) {
             $_SESSION['toast_message'] = 'Role created successfully.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $_SESSION['user_id'] ?? null,
+                'role_create',
+                "Created role: {$name}"
+            );
         } else {
             $_SESSION['toast_message'] = 'Failed to create role.';
             $_SESSION['toast_type'] = 'danger';
@@ -90,6 +97,11 @@ class RoleController {
         if (Role::update($id, $updateData)) {
             $_SESSION['toast_message'] = 'Role updated successfully.';
             $_SESSION['toast_type'] = 'success';
+            Activity::log(
+                $_SESSION['user_id'] ?? null,
+                'role_update',
+                "Updated role ID {$id}: {$name}"
+            );
         } else {
             $_SESSION['toast_message'] = 'Failed to update role.';
             $_SESSION['toast_type'] = 'danger';
@@ -99,8 +111,7 @@ class RoleController {
         exit;
     }
 
-    public function delete($id)
-    {
+    public function delete($id) {
         // 1️⃣ Fetch role info
         $role = Role::find($id);
 
@@ -134,6 +145,12 @@ class RoleController {
         if (Role::delete($id)) {
             $_SESSION['toast_message'] = 'Role and associated users deleted successfully.';
             $_SESSION['toast_type'] = 'success';
+
+            Activity::log(
+                $_SESSION['user_id'] ?? null,
+                'role_delete',
+                "Deleted role: {$role['name']} (ID {$id})"
+            );
         } else {
             $_SESSION['toast_message'] = 'Failed to delete role.';
             $_SESSION['toast_type'] = 'danger';
@@ -144,8 +161,7 @@ class RoleController {
     }
 
 
-    public function export()
-    {
+    public function export() {
         $roles = Role::getAll();
 
         // ✅ Load PhpSpreadsheet classes
@@ -176,6 +192,12 @@ class RoleController {
         foreach (range('A', 'F') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
+
+        Activity::log(
+            $_SESSION['user_id'] ?? null,
+            'role_export',
+            'Exported roles data to Excel'
+        );
 
         // ✅ Set file headers
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
