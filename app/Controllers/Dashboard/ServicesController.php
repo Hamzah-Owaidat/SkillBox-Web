@@ -27,16 +27,13 @@ class ServicesController {
         // Get paginated services
         $pagination = Service::paginate($limit, $page);
         $services = $pagination['data'];
-        
-        // Get all available supervisors for the dropdown
-        $allSupervisors = Service::getAllSupervisors();
 
         ob_start();
         require __DIR__ . '/../../../views/dashboard/services.php';
     }
 
     /**
-     * Create new service with supervisors
+     * Create new service
      */
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -48,7 +45,6 @@ class ServicesController {
         $title = trim($_POST['title'] ?? '');
         $image = trim($_POST['image'] ?? '');
         $description = trim($_POST['description'] ?? '');
-        $supervisorIds = $_POST['supervisors'] ?? [];
 
         // Validate required fields
         if (empty($title) || empty($image) || empty($description)) {
@@ -67,19 +63,8 @@ class ServicesController {
         ]);
 
         if ($serviceId) {
-            // Assign supervisors if any were selected
-            if (!empty($supervisorIds) && is_array($supervisorIds)) {
-                $assignResult = Service::assignSupervisors($serviceId, $supervisorIds);
-                
-                if ($assignResult) {
-                    $supervisorCount = count($supervisorIds);
-                    $_SESSION['toast_message'] = "Service created successfully with {$supervisorCount} supervisor(s).";
-                } else {
-                    $_SESSION['toast_message'] = 'Service created but failed to assign supervisors.';
-                }
-            } else {
-                $_SESSION['toast_message'] = 'Service created successfully (no supervisors assigned).';
-            }
+            
+            $_SESSION['toast_message'] = 'Service created successfully.';
             $_SESSION['toast_type'] = 'success';
             
             // ===== SEND NOTIFICATION TO ALL CLIENTS =====
@@ -100,7 +85,7 @@ class ServicesController {
     }
 
     /**
-     * Update existing service and its supervisors
+     * Update existing service
      */
     public function update($id) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -112,7 +97,6 @@ class ServicesController {
         $title = trim($_POST['title'] ?? '');
         $image = trim($_POST['image'] ?? '');
         $description = trim($_POST['description'] ?? '');
-        $supervisorIds = $_POST['supervisors'] ?? [];
 
         // Validate required fields
         if (empty($title) || empty($image) || empty($description)) {
@@ -131,19 +115,8 @@ class ServicesController {
         ]);
 
         if ($updateResult) {
-            // Update supervisors (even if empty array to remove all)
-            $assignResult = Service::assignSupervisors($id, $supervisorIds);
             
-            if ($assignResult) {
-                if (!empty($supervisorIds)) {
-                    $supervisorCount = count($supervisorIds);
-                    $_SESSION['toast_message'] = "Service updated successfully with {$supervisorCount} supervisor(s).";
-                } else {
-                    $_SESSION['toast_message'] = 'Service updated successfully (all supervisors removed).';
-                }
-            } else {
-                $_SESSION['toast_message'] = 'Service updated but failed to assign supervisors.';
-            }
+            $_SESSION['toast_message'] = 'Service updated successfully.';
             $_SESSION['toast_type'] = 'success';
             
             // ===== SEND NOTIFICATION TO ALL CLIENTS =====
@@ -164,7 +137,7 @@ class ServicesController {
     }
 
     /**
-     * Delete service (supervisors automatically deleted via cascade)
+     * Delete service
      */
     public function delete($id) {
         // Get service details before deletion for notification
@@ -172,7 +145,7 @@ class ServicesController {
         $serviceTitle = $service['title'] ?? 'Unknown Service';
         
         if (Service::delete($id)) {
-            $_SESSION['toast_message'] = 'Service and its supervisor assignments deleted successfully.';
+            $_SESSION['toast_message'] = 'Service deleted successfully.';
             $_SESSION['toast_type'] = 'success';
             
             // ===== SEND NOTIFICATION TO ALL CLIENTS =====
@@ -191,7 +164,7 @@ class ServicesController {
     }
 
     /**
-     * Export all services to Excel including supervisors
+     * Export all services to Excel
      */
     public function export() {
         $services = Service::getAll();
@@ -205,7 +178,6 @@ class ServicesController {
             'Title', 
             'Icon/Emoji', 
             'Description', 
-            'Supervisors', 
             'Created By', 
             'Updated By', 
             'Created At', 
@@ -225,21 +197,12 @@ class ServicesController {
         // Fill data rows
         $row = 2;
         foreach ($services as $service) {
-            // Format supervisors as comma-separated names
-            $supervisorNames = [];
-            if (!empty($service['supervisors'])) {
-                foreach ($service['supervisors'] as $supervisor) {
-                    $supervisorNames[] = $supervisor['full_name'];
-                }
-            }
-            $supervisorsText = !empty($supervisorNames) ? implode(', ', $supervisorNames) : 'No Supervisors';
             
             // Fill cells
             $sheet->setCellValue("A{$row}", $service['id']);
             $sheet->setCellValue("B{$row}", $service['title']);
             $sheet->setCellValue("C{$row}", $service['image']);
             $sheet->setCellValue("D{$row}", $service['description']);
-            $sheet->setCellValue("E{$row}", $supervisorsText);
             $sheet->setCellValue("F{$row}", $service['created_by_name'] ?? 'N/A');
             $sheet->setCellValue("G{$row}", $service['updated_by_name'] ?? 'N/A');
             $sheet->setCellValue("H{$row}", $service['created_at'] ?? '');

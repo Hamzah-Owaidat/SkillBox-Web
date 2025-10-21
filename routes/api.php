@@ -1,5 +1,6 @@
 <?php
 use App\Controllers\Api\NotificationApiController;
+use App\Controllers\Api\PusherAuthController;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
 
@@ -7,6 +8,7 @@ $router->post('/api/register', [AuthController::class, 'registerApi']);
 $router->post('/api/login', [AuthController::class, 'loginApi']);
 $router->get('/api/me', [UserController::class, 'me']); // protect in controller with AuthMiddleware::api()
 
+$router->post('/pusher/auth', [PusherAuthController::class, 'authenticate']);
 
 // Get list of notifications (supports ?limit= & ?unread_only=true)
 $router->get('/api/notifications', [NotificationApiController::class, 'index']);

@@ -13,7 +13,7 @@ class PortfolioController {
         $allRoles = Role::getAll();
 
         // Only keep worker and supervisor
-        $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker', 'supervisor']));
+        $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker']));
         require __DIR__ . '/../../views/submitCv.php';
     }
 

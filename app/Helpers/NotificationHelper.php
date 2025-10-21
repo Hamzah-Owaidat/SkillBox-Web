@@ -4,6 +4,7 @@ namespace App\Helpers;
 use App\Models\Notification;
 use App\Services\PusherService;
 use App\Core\Database;
+use App\Models\Role;
 
 class NotificationHelper {
 
@@ -95,9 +96,31 @@ class NotificationHelper {
         }
     }
 
-    public static function getAllClientIds() { return self::getUsersByRoleId(5); }
-    public static function getAllSupervisorIds() { return self::getUsersByRoleId(6); }
-    public static function getAllAdminIds() { return self::getUsersByRoleId(1); }
+    public static function getAllClientIds() {
+        // Get the role record for 'client'
+        $role = Role::findByName('client');
+    
+        // If role not found, return empty array
+        if (!$role) {
+            return [];
+        }
+    
+        // Use the role id dynamically
+        return self::getUsersByRoleId($role['id']);
+    }
+
+    public static function getAllAdminIds() {
+        // Get the role record for 'admin'
+        $role = Role::findByName('admin');
+    
+        // If role not found, return empty array
+        if (!$role) {
+            return [];
+        }
+    
+        // Use the role id dynamically
+        return self::getUsersByRoleId($role['id']);
+    }
 
     public static function getAllActiveUserIds() {
         try {

@@ -12,7 +12,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <link href="/skillbox/public/styles.css" rel="stylesheet"/>
 </head>
-<body>
+<body class="overflow-hidden">
 
   <?php include __DIR__ . '/../partials/toast.php'; ?>
 

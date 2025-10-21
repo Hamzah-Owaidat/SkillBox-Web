@@ -20,7 +20,7 @@ return [
     // Corrected: 'use_tls' instead of 'useTLS' (to match your service config)
     'use_tls' => true,
 
-    // Fixed: 'debig' → 'debug'
+    
     'debug' => filter_var($_ENV['PUSHER_DEBUG'] ?? getenv('PUSHER_DEBUG') ?: false, FILTER_VALIDATE_BOOLEAN),
 
     // Optional: default timeout & logging
