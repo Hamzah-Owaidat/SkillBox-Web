@@ -201,6 +201,19 @@ class Portfolio extends Model
                 ':user_id' => $userId
             ]);
 
+            $services = self::getServices($id);
+            $assignStmt = $db->prepare("
+                INSERT IGNORE INTO service_workers (service_id, user_id, portfolio_id)
+                VALUES (:service_id, :user_id, :portfolio_id)
+            ");
+            foreach ($services as $service) {
+                $assignStmt->execute([
+                    ':service_id' => $service['id'],
+                    ':user_id' => $userId,
+                    ':portfolio_id' => $id
+                ]);
+            }
+
             $db->commit();
             return true;
         } catch (\Exception $e) {
