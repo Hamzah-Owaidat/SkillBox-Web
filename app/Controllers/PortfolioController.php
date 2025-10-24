@@ -5,6 +5,7 @@ use App\Core\AuthMiddleware;
 use App\Core\Database;
 use App\Models\Portfolio;
 use App\Models\Role;
+use App\Models\Service;
 
 class PortfolioController {
     protected $baseUrl = '/skillbox/public';
@@ -14,6 +15,9 @@ class PortfolioController {
 
         // Only keep worker and supervisor
         $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker']));
+        
+        $services = Service::getAll();
+        
         require __DIR__ . '/../../views/submitCv.php';
     }
 
@@ -69,7 +73,10 @@ class PortfolioController {
             }
         }
 
-        Portfolio::create($data);
+        $portfolioId = Portfolio::create($data);
+
+        // ✅ Attach selected services
+        Portfolio::attachServices($portfolioId, $_POST['services'] ?? []);
 
         $_SESSION['toast_message'] = 'Portfolio submitted successfully';
         $_SESSION['toast_type'] = 'success';
@@ -132,7 +139,10 @@ class PortfolioController {
 
         // Get available roles for the form
         $allRoles = Role::getAll();
-        $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker', 'supervisor']));
+        $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker']));
+
+        $services = Service::getAll();
+        $selectedServiceIds = array_column(Portfolio::getServices($id), 'id');
 
         // Pass portfolio data to view
         $isEdit = true;
@@ -155,12 +165,13 @@ class PortfolioController {
         $address = htmlspecialchars($_POST['address'] ?? '');
         $linkedin = htmlspecialchars($_POST['linkedin'] ?? '');
         $roleId = $_POST['requested_role'] ?? '';
+        $selectedServices = $_POST['services'] ?? [];
 
         // Convert role ID to name
         $roleName = null;
         if ($roleId) {
             $role = Role::findById($roleId);
-            if ($role && in_array($role['name'], ['worker', 'supervisor'])) {
+            if ($role && in_array($role['name'], ['worker'])) {
                 $roleName = $role['name'];
             }
         }
@@ -200,7 +211,7 @@ class PortfolioController {
             'phone' => $phone,
             'address' => $address,
             'linkedin' => $linkedin,
-            'requested_role' => $roleName // Store the role NAME
+            'requested_role' => $roleName
         ];
 
         if ($attachmentPath) {
@@ -209,6 +220,8 @@ class PortfolioController {
 
         // Use the model method
         $updated = Portfolio::updatePendingByUser($id, $userId, $data);
+
+        Portfolio::syncServices($id, $selectedServices);
 
         if ($updated) {
             $_SESSION['toast_message'] = 'Portfolio updated successfully';

@@ -27,6 +27,7 @@ ob_start();
           <th>Address</th>
           <th>CV</th>
           <th>Requested Role</th>
+          <th>Services</th>
           <th class="text-center">Status</th>
           <th>Created At</th>
           <th class="text-center">Actions</th>
@@ -57,6 +58,15 @@ ob_start();
                 <span class="badge bg-primary">
                   <?= htmlspecialchars($portfolio['requested_role'] ?? 'N/A') ?>
                 </span>
+              </td>
+              <td>
+                <?php if (!empty($portfolio['services'])): ?>
+                  <?php foreach ($portfolio['services'] as $service): ?>
+                    <span class="badge bg-info mb-1"><?= htmlspecialchars($service['title']) ?></span>
+                  <?php endforeach; ?>
+                <?php else: ?>
+                  <span class="text-muted">No Services</span>
+                <?php endif; ?>
               </td>
               <td class="text-center">
                 <?php if ($portfolio['status'] === 'pending'): ?>
@@ -132,6 +142,18 @@ ob_start();
             <div class="col-md-6 mb-3">
               <strong><i class="fas fa-briefcase me-2"></i>Requested Role:</strong>
               <p><span class="badge bg-primary"><?= htmlspecialchars($portfolio['requested_role'] ?? 'N/A') ?></span></p>
+            </div>
+            <div class="col-md-6 mb-3">
+              <strong><i class="fas fa-briefcase me-2"></i>Services:</strong>
+              <p>
+                <?php if (!empty($portfolio['services'])): ?>
+                  <?php foreach ($portfolio['services'] as $service): ?>
+                    <span class="badge bg-info mb-1"><?= htmlspecialchars($service['title']) ?></span>
+                  <?php endforeach; ?>
+                <?php else: ?>
+                  <span class="text-muted">No Services</span>
+                <?php endif; ?>
+              </p>
             </div>
             <div class="col-md-6 mb-3">
               <strong><i class="fas fa-info-circle me-2"></i>Status:</strong>

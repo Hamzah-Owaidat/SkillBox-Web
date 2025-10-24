@@ -8,8 +8,7 @@ class Portfolio extends Model
 {
     protected static $table = 'portfolios';
 
-    public static function create(array $data)
-    {
+    public static function create(array $data) {
         $stmt = self::db()->prepare("
             INSERT INTO " . static::$table . " 
                 (user_id, full_name, email, phone, address, linkedin, attachment_path, requested_role)
@@ -31,15 +30,13 @@ class Portfolio extends Model
         return self::db()->lastInsertId();
     }
 
-    public static function findById($id)
-    {
+    public static function findById($id) {
         $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " WHERE id = :id");
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public static function findPendingByUser($id, $userId)
-    {
+    public static function findPendingByUser($id, $userId) {
         $stmt = self::db()->prepare("
             SELECT * FROM " . static::$table . "
             WHERE id = :id AND user_id = :user_id AND status = 'pending'
@@ -48,8 +45,7 @@ class Portfolio extends Model
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public static function deletePendingByUser($id, $userId)
-    {
+    public static function deletePendingByUser($id, $userId) {
         $stmt = self::db()->prepare("
             DELETE FROM " . static::$table . "
             WHERE id = :id AND user_id = :user_id AND status = 'pending'
@@ -58,8 +54,7 @@ class Portfolio extends Model
         return $stmt->rowCount() > 0;
     }
 
-    public static function updatePendingByUser($id, $userId, array $data)
-    {
+    public static function updatePendingByUser($id, $userId, array $data) {
         $fields = [];
         $params = [];
 
@@ -87,15 +82,13 @@ class Portfolio extends Model
         return $stmt->rowCount() > 0;
     }
 
-    public static function getByUser($userId)
-    {
+    public static function getByUser($userId) {
         $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " WHERE user_id = :user_id ORDER BY created_at DESC");
         $stmt->execute([':user_id' => $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function getAll()
-    {
+    public static function getAll() {
         $stmt = self::db()->prepare("
             SELECT 
             p.id,
@@ -120,11 +113,17 @@ class Portfolio extends Model
         ORDER BY p.created_at DESC
         ");
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $portfolios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Attach services to each portfolio
+        foreach ($portfolios as &$portfolio) {
+            $portfolio['services'] = self::getServices($portfolio['id']);
+        }
+
+        return $portfolios;
     }
 
-    public static function paginate($limit = 10, $page = 1)
-    {
+    public static function paginate($limit = 10, $page = 1) {
         $offset = ($page - 1) * $limit;
 
         $stmt = self::db()->prepare("
@@ -153,6 +152,11 @@ class Portfolio extends Model
         $stmt->execute();
         $portfolios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Attach services to each portfolio
+        foreach ($portfolios as &$portfolio) {
+            $portfolio['services'] = self::getServices($portfolio['id']);
+        }
+
         $countStmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
         $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
@@ -166,8 +170,7 @@ class Portfolio extends Model
     }
 
     // ✅ Approve portfolio and update user role
-    public static function approve($id, $requestedRole, $userId, $adminId)
-    {
+    public static function approve($id, $requestedRole, $userId, $adminId) {
         $db = self::db();
         $db->beginTransaction();
 
@@ -207,10 +210,8 @@ class Portfolio extends Model
         }
     }
 
-
     // ✅ Reject portfolio
-    public static function reject($id, $adminId)
-    {
+    public static function reject($id, $adminId) {
         $stmt = self::db()->prepare("
             UPDATE " . static::$table . "
             SET 
@@ -226,10 +227,8 @@ class Portfolio extends Model
         ]);
     }
 
-
     // ✅ Reset portfolio back to pending (optional)
-    public static function reset($id)
-    {
+    public static function reset($id) {
         $stmt = self::db()->prepare("UPDATE " . static::$table . " SET status = 'pending', updated_at = NOW() WHERE id = ?");
         return $stmt->execute([$id]);
     }
@@ -245,5 +244,44 @@ class Portfolio extends Model
     public static function delete($id) {
         $stmt = self::db()->prepare("DELETE FROM " . static::$table . " WHERE id = ?");
         return $stmt->execute([$id]);
+    }
+
+    // ✅ Attach one or multiple services to a portfolio
+    public static function attachServices($portfolioId, array $serviceIds) {
+        if (empty($serviceIds)) return;
+
+        $db = self::db();
+        $stmt = $db->prepare("
+            INSERT INTO portfolio_services (portfolio_id, service_id)
+            VALUES (:portfolio_id, :service_id)
+        ");
+
+        foreach ($serviceIds as $serviceId) {
+            $stmt->execute([
+                ':portfolio_id' => $portfolioId,
+                ':service_id' => $serviceId
+            ]);
+        }
+    }
+    
+    // ✅ Remove and re-add services (used for updates)
+    public static function syncServices($portfolioId, array $serviceIds) {
+        $db = self::db();
+        $db->prepare("DELETE FROM portfolio_services WHERE portfolio_id = :id")
+        ->execute([':id' => $portfolioId]);
+        self::attachServices($portfolioId, $serviceIds);
+    }
+
+    // ✅ Get all services attached to a specific portfolio
+    public static function getServices($portfolioId)
+    {
+        $stmt = self::db()->prepare("
+            SELECT s.*
+            FROM services s
+            INNER JOIN portfolio_services ps ON ps.service_id = s.id
+            WHERE ps.portfolio_id = :portfolio_id
+        ");
+        $stmt->execute([':portfolio_id' => $portfolioId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

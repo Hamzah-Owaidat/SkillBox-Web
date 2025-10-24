@@ -39,7 +39,7 @@ class PortfoliosController {
         // Headers
         $headers = [
             'ID', 'User', 'Full Name', 'Email', 'Phone', 'Address', 
-            'LinkedIn', 'Requested Role', 'Status', 
+            'LinkedIn', 'Requested Role', 'Services', 'Status', 
             'Reviewed By', 'Reviewed At', 'Created At', 'Updated At'
         ];
 
@@ -50,9 +50,12 @@ class PortfoliosController {
             $col++;
         }
 
+        
         // Data
         $row = 2;
         foreach ($portfolios as $p) {
+            $services = isset($p['services']) ? implode(", ", array_column($p['services'], 'title')) : 'N/A';
+            
             $sheet->setCellValue("A{$row}", $p['id']);
             $sheet->setCellValue("B{$row}", $p['user_name'] ?? 'N/A');
             $sheet->setCellValue("C{$row}", $p['full_name']);
@@ -61,16 +64,17 @@ class PortfoliosController {
             $sheet->setCellValue("F{$row}", $p['address'] ?? 'N/A');
             $sheet->setCellValue("G{$row}", $p['linkedin'] ?? 'N/A');
             $sheet->setCellValue("H{$row}", ucfirst($p['requested_role_name'] ?? 'N/A'));
-            $sheet->setCellValue("I{$row}", ucfirst($p['status']));
-            $sheet->setCellValue("J{$row}", $p['reviewed_by_name'] ?? '—');
-            $sheet->setCellValue("K{$row}", $p['reviewed_at'] ?? '—');
-            $sheet->setCellValue("L{$row}", $p['created_at'] ?? '');
-            $sheet->setCellValue("M{$row}", $p['updated_at'] ?? '');
+            $sheet->setCellValue("I{$row}", $services);
+            $sheet->setCellValue("J{$row}", ucfirst($p['status']));
+            $sheet->setCellValue("K{$row}", $p['reviewed_by_name'] ?? '—');
+            $sheet->setCellValue("L{$row}", $p['reviewed_at'] ?? '—');
+            $sheet->setCellValue("M{$row}", $p['created_at'] ?? '');
+            $sheet->setCellValue("N{$row}", $p['updated_at'] ?? '');
             $row++;
         }
 
         // Auto-size
-        foreach (range('A', 'L') as $col) {
+        foreach (range('A', 'N') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -214,7 +218,6 @@ class PortfoliosController {
         header("Location: {$this->baseUrl}/dashboard/portfolios");
         exit;
     }
-
 
     /**
      * Send notification with custom recipients

@@ -108,6 +108,31 @@
               </select>
             </div>
 
+            <!-- Services -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold d-block">Select Services You Offer</label>
+              <div class="row">
+                <?php foreach ($services as $service): ?>
+                  <div class="col-md-6 mb-2">
+                    <div class="form-check">
+                      <input 
+                        class="form-check-input"
+                        type="checkbox"
+                        name="services[]"
+                        id="service_<?= $service['id'] ?>"
+                        value="<?= $service['id'] ?>"
+                        <?= (isset($selectedServiceIds) && in_array($service['id'], $selectedServiceIds)) ? 'checked' : '' ?>
+                      >
+                      <label class="form-check-label" for="service_<?= $service['id'] ?>">
+                        <?= htmlspecialchars($service['title']) ?>
+                      </label>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+
+
             <!-- Submit Button -->
             <div class="d-grid">
               <button type="submit" class="btn btn-gradient btn-lg fw-bold py-2" style="
