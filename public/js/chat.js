@@ -1,12 +1,13 @@
-// chat.js - Real-time Chat with Pusher
 (function() {
     'use strict';
 
     const baseUrl = window.BASE_URL;
+    console.log(baseUrl);
+
 
     // Configuration
-    const PUSHER_KEY = window.PUSHER_KEY;// Replace with your actual Pusher key
-    const PUSHER_CLUSTER = window.PUSHER_CLUSTER; // Replace with your cluster (e.g., 'eu', 'us2')
+    const PUSHER_KEY = window.PUSHER_KEY;
+    const PUSHER_CLUSTER = window.PUSHER_CLUSTER;
     console.log("Chat.js");
     console.log(PUSHER_KEY);
     console.log(PUSHER_CLUSTER);
@@ -27,21 +28,17 @@
     let pusher = null;
     let channel = null;
 
-    // Common emojis
-    const commonEmojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '✨', '💯', '🙏', '👏'];
-
     /**
      * Initialize Pusher for real-time messaging
      */
     function initPusher() {
-        const baseUrl = window.BASE_URL;
 
         try {
             // Initialize Pusher
             const pusher = new Pusher(PUSHER_KEY, {
                 cluster: PUSHER_CLUSTER,
                 encrypted: true,
-                authEndpoint: `${baseUrl}/pusher/auth`, // Authentication endpoint for private channels
+                authEndpoint: `${baseUrl}/pusher/auth`,
                 auth: {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
@@ -105,7 +102,7 @@
             }
 
             // Send via AJAX
-            const response = await fetch(`${BASE_URL}/chat/send`, {
+            const response = await fetch(`${baseUrl}/chat/send`, {
                 method: 'POST',
                 body: formData
             });
@@ -157,14 +154,14 @@
             
             if (isImage) {
                 attachmentHtml = `
-                    <img src="${BASE_URL}/../${message.attachment_path}" 
+                    <img src="${baseUrl}/${message.attachment_path}" 
                          class="img-fluid rounded mb-2" 
                          style="max-width: 300px; cursor: pointer;"
                          onclick="window.open(this.src, '_blank')">
                 `;
             } else {
                 attachmentHtml = `
-                    <a href="${BASE_URL}/../${message.attachment_path}" 
+                    <a href="${baseUrl}/${message.attachment_path}" 
                        target="_blank" 
                        class="text-decoration-none ${isMine ? 'text-white' : 'text-primary'}">
                         <i class="fas fa-file"></i> 
@@ -237,27 +234,11 @@
     }
 
     /**
-     * Show emoji picker
-     */
-    function showEmojiPicker() {
-        const currentValue = messageInput.value;
-        const emojis = commonEmojis.join(' ');
-        
-        // Simple prompt for emoji selection
-        const emoji = prompt(`Select an emoji:\n${emojis}\n\nOr type your own:`);
-        
-        if (emoji) {
-            messageInput.value = currentValue + emoji;
-            messageInput.focus();
-        }
-    }
-
-    /**
      * Mark conversation as read
      */
     async function markAsRead() {
         try {
-            await fetch(`${BASE_URL}/chat/mark-read/${CONVERSATION_ID}`, {
+            await fetch(`${baseUrl}/chat/mark-read/${CONVERSATION_ID}`, {
                 method: 'POST'
             });
         } catch (error) {

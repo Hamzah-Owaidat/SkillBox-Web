@@ -48,12 +48,12 @@ $currentUserId = $_SESSION['user_id'] ?? null;
                                             ?>
                                             
                                             <?php if ($isImage): ?>
-                                                <img src="<?= $baseUrl ?>/../<?= $msg['attachment_path'] ?>" 
+                                                <img src="<?= $baseUrl ?>/<?= $msg['attachment_path'] ?>" 
                                                      class="img-fluid rounded mb-2" 
                                                      style="max-width: 300px; cursor: pointer;"
                                                      onclick="window.open(this.src, '_blank')">
                                             <?php else: ?>
-                                                <a href="<?= $baseUrl ?>/../<?= $msg['attachment_path'] ?>" 
+                                                <a href="<?= $baseUrl ?>/<?= $msg['attachment_path'] ?>" 
                                                    target="_blank" 
                                                    class="text-decoration-none <?= $isMine ? 'text-white' : 'text-primary' ?>">
                                                     <i class="fas fa-file"></i> 
@@ -83,12 +83,7 @@ $currentUserId = $_SESSION['user_id'] ?? null;
                 <div class="card-footer bg-light">
                     <form id="messageForm" class="d-flex align-items-center gap-2" enctype="multipart/form-data">
                         <input type="hidden" name="conversation_id" value="<?= $conversation['id'] ?>">
-                        
-                        <!-- Emoji Picker Button -->
-                        <button type="button" class="btn btn-outline-secondary" id="emojiBtn" title="Add emoji">
-                            <i class="fas fa-smile"></i>
-                        </button>
-                        
+
                         <!-- File Upload Button -->
                         <label for="fileInput" class="btn btn-outline-secondary mb-0" title="Attach file">
                             <i class="fas fa-paperclip"></i>
