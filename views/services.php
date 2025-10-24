@@ -15,7 +15,7 @@
             </div>
             <h5 class="card-title"><?= $service['title'] ?></h5>
             <p class="card-text"><?= $service['description'] ?></p>
-            <a href="<?= $baseUrl ?>/interstedclients.html" class="btn btn-interested">Get Started</a>
+            <a href="<?= $baseUrl ?>/services/<?= $service['id'] ?>" class="btn btn-interested">Get Started</a>
           </div>
         </div>
       <?php endforeach; ?>

@@ -34,6 +34,7 @@ $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePort
 
 // Services
 $router->get('/services', [ServiceController::class, 'index']);
+$router->get('/services/{id}', [ServiceController::class, 'show']);
 
 // =================== START DASHBOARD ROUTES ===================
 // Dashboard

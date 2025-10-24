@@ -75,10 +75,6 @@ class Service extends Model
         return $stmt->execute([$id]);
     }
 
-    // =====================================================
-    // STANDARD CRUD METHODS WITH SUPERVISOR DATA
-    // =====================================================
-
     public static function getAll() {
         $stmt = self::db()->prepare("
             SELECT s.*, 
@@ -135,4 +131,23 @@ class Service extends Model
         $stmt->execute([$limit]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public static function getWorkers($serviceId) {
+        $stmt = self::db()->prepare("
+            SELECT 
+                u.id, 
+                u.full_name,
+                u.email, 
+                p.phone, 
+                p.linkedin,
+                p.attachment_path AS cv
+            FROM users u
+            INNER JOIN portfolios p ON p.user_id = u.id AND p.status = 'approved'
+            INNER JOIN service_workers sw ON sw.user_id = u.id
+            WHERE sw.service_id = :service_id
+        ");
+        $stmt->execute([':service_id' => $serviceId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
 }

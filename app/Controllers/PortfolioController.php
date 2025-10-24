@@ -21,8 +21,7 @@ class PortfolioController {
         require __DIR__ . '/../../views/submitCv.php';
     }
 
-    public function store()
-    {
+    public function store() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
@@ -54,13 +53,19 @@ class PortfolioController {
 
         // Upload file
         if (!empty($_FILES['attachment']['name'])) {
-            $uploadDir = __DIR__ . '/../../public/uploads/portfolios/';
+            $userId = $_SESSION['user_id'];
+            $uploadDir = __DIR__ . "/../../public/uploads/portfolios/{$userId}/";
+
+            // Create user folder if not exists
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-            $fileName = time() . '_' . basename($_FILES['attachment']['name']);
+            // Rename file: userId_YYYYMMDD_CV.pdf
+            $date = date('Ymd');
+            $fileName = "{$userId}_{$date}_CV.pdf";
             $target = $uploadDir . $fileName;
-            $type = strtolower(pathinfo($target, PATHINFO_EXTENSION));
 
+            // Check file type
+            $type = strtolower(pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION));
             if ($type !== 'pdf') {
                 $_SESSION['toast_message'] = 'Only PDF files allowed';
                 $_SESSION['toast_type'] = 'danger';
@@ -69,9 +74,11 @@ class PortfolioController {
             }
 
             if (move_uploaded_file($_FILES['attachment']['tmp_name'], $target)) {
-                $data['attachment_path'] = "public/uploads/portfolios/$fileName";
+                // Store relative path
+                $data['attachment_path'] = "public/uploads/portfolios/{$userId}/{$fileName}";
             }
         }
+
 
         $portfolioId = Portfolio::create($data);
 
@@ -150,8 +157,7 @@ class PortfolioController {
     }
 
     // Update portfolio
-    public function updatePortfolio($id)
-    {
+    public function updatePortfolio($id) {
         AuthMiddleware::web();
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
@@ -193,14 +199,17 @@ class PortfolioController {
         // Handle file upload
         $attachmentPath = null;
         if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = __DIR__ . '/../../public/uploads/portfolios/';
-            if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);
-
-            $fileName = time() . '_' . basename($_FILES['attachment']['name']);
-            $targetPath = "$uploadDir$fileName";
-
+            $userId = $GLOBALS['auth_user']['id'];
+            $uploadDir = __DIR__ . "/../../public/uploads/portfolios/{$userId}/";
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        
+            $date = date('Ymd');
+            $fileName = "{$userId}_{$date}_CV.pdf";
+            $targetPath = $uploadDir . $fileName;
+        
             if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
-                $attachmentPath = "public/uploads/portfolios/$fileName";
+                $attachmentPath = "public/uploads/portfolios/{$userId}/{$fileName}";
+                $data['attachment_path'] = $attachmentPath;
             }
         }
 
