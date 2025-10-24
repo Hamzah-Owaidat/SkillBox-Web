@@ -28,14 +28,16 @@ class PusherAuthController {
         }
         
         // Verify the user is authorized for this channel
-        $expectedChannel = "private-user-{$userId}";
-        
-        if ($channelName !== $expectedChannel) {
+        $allowedPrefix = "private-chat-";
+        $allowedUserPrefix = "private-user-{$userId}";
+
+        if ($channelName !== $allowedUserPrefix && strpos($channelName, $allowedPrefix) !== 0) {
             http_response_code(403);
             echo json_encode(['error' => 'Not authorized for this channel']);
             error_log("❌ Pusher Auth Failed: User {$userId} tried to access {$channelName}");
             exit;
         }
+
         
         try {
             // Load Pusher config

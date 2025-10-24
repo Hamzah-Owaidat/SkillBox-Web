@@ -9,6 +9,7 @@ use App\Controllers\HomeController;
 use App\Controllers\PortfolioController;
 use App\Controllers\ServiceController;
 use App\Controllers\UserController;
+use App\Controllers\ChatController;
 
 // Auth
 $router->get('/login', [AuthController::class, 'showLoginForm']);
@@ -35,6 +36,16 @@ $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePort
 // Services
 $router->get('/services', [ServiceController::class, 'index']);
 $router->get('/services/{id}', [ServiceController::class, 'show']);
+
+// Chat routes
+$router->get('/chat', [ChatController::class, 'index']);
+$router->get('/chat/start/{id}', [ChatController::class, 'start']);
+$router->get('/chat/conversation/{id}', [ChatController::class, 'conversation']);
+$router->post('/chat/send', [ChatController::class, 'sendMessage']);
+$router->get('/chat/messages/{id}', [ChatController::class, 'getMessages']);
+$router->post('/chat/mark-read/{id}', [ChatController::class, 'markAsRead']);
+
+
 
 // =================== START DASHBOARD ROUTES ===================
 // Dashboard

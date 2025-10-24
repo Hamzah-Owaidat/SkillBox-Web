@@ -28,6 +28,10 @@
                     CV not uploaded
                 <?php endif; ?>
               </p>
+              <!-- Chat Button -->
+              <a href="<?= $baseUrl ?>/chat/start/<?= $worker['id'] ?>" class="btn btn-sm btn-success mt-2">
+                  Chat
+              </a>
             </div>
           </div>
         <?php endforeach; ?>

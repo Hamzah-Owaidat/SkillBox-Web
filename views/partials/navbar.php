@@ -73,8 +73,8 @@ $userId = $_SESSION['user_id'] ?? null;
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="<?= $baseUrl ?>/profile">Profile</a></li>
-              <?php if ($role === 'client'): ?>
-                <li><a class="dropdown-item" href="<?= $baseUrl ?>/chating">Chat</a></li>
+              <?php if ($role): ?>
+                <li><a class="dropdown-item" href="<?= $baseUrl ?>/chat">Chats</a></li>
               <?php endif; ?>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="<?= $baseUrl ?>/logout">Logout</a></li>

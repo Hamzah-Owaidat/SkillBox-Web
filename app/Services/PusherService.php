@@ -170,4 +170,25 @@ class PusherService {
             'debug' => $this->debug,
         ];
     }
+
+    /**
+     * Send a chat message from one user to another
+     */
+    public function sendMessage(int $senderId, int $receiverId, string $message) {
+        $users = [$senderId, $receiverId];
+        sort($users); // ensure same channel for both users
+
+        $channel = "private-chat-{$users[0]}-{$users[1]}";
+        $event = 'chat.message';
+
+        $data = [
+            'sender_id' => $senderId,
+            'receiver_id' => $receiverId,
+            'message' => $message,
+            'timestamp' => date('Y-m-d H:i:s'),
+        ];
+
+        return $this->pusher->trigger($channel, $event, $data);
+    }
+
 }
