@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Model;
@@ -8,17 +9,20 @@ class Service extends Model
 {
     protected static $table = 'services';
 
-    public static function findById($id) {
+    public static function findById($id)
+    {
         $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
-    public static function find($id) {
+
+    public static function find($id)
+    {
         return self::findById($id);
     }
 
-    public static function create(array $data) {
+    public static function create(array $data)
+    {
         $stmt = self::db()->prepare("
             INSERT INTO " . static::$table . " 
             (title, image, description, created_by) 
@@ -33,7 +37,8 @@ class Service extends Model
         return self::db()->lastInsertId();
     }
 
-    public static function update($id, array $data) {
+    public static function update($id, array $data)
+    {
         $fields = [];
         $values = [];
 
@@ -69,12 +74,14 @@ class Service extends Model
         return $stmt->execute($values);
     }
 
-    public static function delete($id) {
+    public static function delete($id)
+    {
         $stmt = self::db()->prepare("DELETE FROM " . static::$table . " WHERE id = ?");
         return $stmt->execute([$id]);
     }
 
-    public static function getAll() {
+    public static function getAll()
+    {
         $stmt = self::db()->prepare("
             SELECT s.*, 
                 c.full_name AS created_by_name, 
@@ -88,20 +95,21 @@ class Service extends Model
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function paginate($limit = 10, $page = 1, $search = '', $sortBy = 'id', $sortOrder = 'ASC') {
+    public static function paginate($limit = 10, $page = 1, $search = '', $sortBy = 'id', $sortOrder = 'ASC')
+    {
         $offset = ($page - 1) * $limit;
-        
+
         // Build WHERE clause
         $whereConditions = [];
         $params = [];
-        
+
         if (!empty($search)) {
             $whereConditions[] = "(s.title LIKE ? OR s.description LIKE ?)";
             $searchParam = "%{$search}%";
             $params[] = $searchParam;
             $params[] = $searchParam;
         }
-        
+
         $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
         // Validate sort parameters
@@ -127,18 +135,18 @@ class Service extends Model
             ORDER BY s.{$sortBy} {$sortOrder}
             LIMIT ? OFFSET ?
         ";
-        
+
         $stmt = self::db()->prepare($sql);
-        
+
         // Bind search params
         foreach ($params as $key => $value) {
             $stmt->bindValue($key + 1, $value);
         }
-        
+
         // Bind pagination params
         $stmt->bindValue(count($params) + 1, (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue(count($params) + 2, (int)$offset, PDO::PARAM_INT);
-        
+
         $stmt->execute();
         $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -151,18 +159,21 @@ class Service extends Model
         ];
     }
 
-    public static function getCount() {
+    public static function getCount()
+    {
         $stmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
         return (int)$stmt->fetch(\PDO::FETCH_ASSOC)['total'];
     }
 
-    public static function getRecent($limit = 5) {
+    public static function getRecent($limit = 5)
+    {
         $stmt = self::db()->prepare("SELECT * FROM " . static::$table . " ORDER BY created_at DESC LIMIT ?");
         $stmt->execute([$limit]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function getWorkers($serviceId) {
+    public static function getWorkers($serviceId)
+    {
         $stmt = self::db()->prepare("
             SELECT 
                 u.id, 
@@ -177,6 +188,19 @@ class Service extends Model
             WHERE sw.service_id = :service_id
         ");
         $stmt->execute([':service_id' => $serviceId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getMonthlyStats()
+    {
+
+        $stmt = self::db()->prepare("
+        SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS total
+        FROM services
+        GROUP BY month
+        ORDER BY month ASC
+    ");
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

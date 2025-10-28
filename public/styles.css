@@ -556,6 +556,10 @@ footer a:hover {
   text-decoration: underline;
 }
 
+canvas {
+  margin-top: 15px;
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .section-title {

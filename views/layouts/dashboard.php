@@ -44,6 +44,8 @@
   </script>
   <script src="https://js.pusher.com/8.2/pusher.min.js"></script>
   <script src="<?= $baseUrl ?>/js/notifications.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
 </body>
 </html>

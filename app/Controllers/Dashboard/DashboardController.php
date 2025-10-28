@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Dashboard;
 
 use App\Models\User;
@@ -6,27 +7,56 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\Activity;
 
-class DashboardController {
+class DashboardController
+{
     protected $baseUrl = '/skillbox/public';
 
-    public function index() {
-        // Stats
-        $totalUsers = User::getCount();
-        $totalServices = Service::getCount();
+    public function index()
+{
+    // Stats
+    $totalUsers = User::getCount();
+    $totalServices = Service::getCount();
 
-        $adminRole = Role::findByName('admin');
-        $totalAdmins = $adminRole ? User::getCountByRole($adminRole['id']) : 0;
+    $adminRole = Role::findByName('admin');
+    $totalAdmins = $adminRole ? User::getCountByRole($adminRole['id']) : 0;
 
-        $workerRole = Role::findByName('worker');
-        $totalWorkers = $workerRole ? User::getCountByRole($workerRole['id']) : 0;
+    $workerRole = Role::findByName('worker');
+    $totalWorkers = $workerRole ? User::getCountByRole($workerRole['id']) : 0;
 
-        // Recent activities
-        $recentActivities = Activity::getRecent(5);
+    // Chart 1: Users by Role
+    $chartData = [
+        'labels' => ['Admins', 'Workers', 'Others'],
+        'values' => [
+            $totalAdmins,
+            $totalWorkers,
+            $totalUsers - $totalAdmins - $totalWorkers
+        ]
+    ];
 
-        require __DIR__ . '/../../../views/dashboard/index.php';
-    }
+    // Chart 2: Services per Month
+    $servicesStats = Service::getMonthlyStats();
+    $servicesChart = [
+        'labels' => array_column($servicesStats, 'month'),
+        'values' => array_column($servicesStats, 'total'),
+    ];
 
-    public function export() {
+    // Chart 3: Activities per Day (Last 7 Days)
+    $activityStats = Activity::getWeeklyStats();
+    $activityChart = [
+        'labels' => array_column($activityStats, 'day'),
+        'values' => array_column($activityStats, 'total'),
+    ];
+
+    // Recent activities
+    $recentActivities = Activity::getRecent(5);
+
+    require __DIR__ . '/../../../views/dashboard/index.php';
+}
+
+
+
+    public function export()
+    {
         $users = Activity::getAll();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
