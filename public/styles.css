@@ -95,6 +95,86 @@ html {
   background-color: var(--bg-light);
 }
 
+/* ========== MODERN FILTER BAR ========== */
+.filter-bar {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.filter-bar:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.filter-bar .form-control-sm,
+.filter-bar .form-select-sm {
+  border: 1px solid #e0e5ea;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background-color: #fafbfc;
+  height: 38px;
+}
+
+.filter-bar .form-control-sm:focus,
+.filter-bar .form-select-sm:focus {
+  border-color: var(--bright-teal);
+  box-shadow: 0 0 0 3px rgba(37, 189, 176, 0.1);
+  outline: none;
+  background-color: white;
+}
+
+.filter-bar .form-control-sm::placeholder {
+  color: #98a6ad;
+  font-size: 0.875rem;
+}
+
+.filter-bar .btn-sm {
+  height: 38px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-bar .btn-primary {
+  background: linear-gradient(135deg, var(--bright-teal) 0%, var(--mint) 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(37, 189, 176, 0.25);
+}
+
+.filter-bar .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 189, 176, 0.35);
+}
+
+.filter-bar .btn-secondary {
+  background-color: #6c757d;
+  border: none;
+}
+
+.filter-bar .btn-secondary:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== GRADIENT BADGE ========== */
+.bg-gradient-info {
+  background: linear-gradient(135deg, #25BDB0 0%, #56D7B4 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(37, 189, 176, 0.2);
+  border-radius: 8px;
+}
 
 /* ========== STATISTICS CARDS ========== */
 .card-stat {
@@ -418,12 +498,12 @@ h4.section-title::before {
 /* ========== TABLE WRAPPER WITH HORIZONTAL SCROLL ========== */
 .table-responsive-custom {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 1rem;
 }
 
 .table-responsive-custom table {
-  min-width: 1200px; /* Adjust based on your content */
+  min-width: 1200px;
   margin-bottom: 0;
 }
 
@@ -496,6 +576,17 @@ footer a:hover {
 
   h2.mb-4 {
     font-size: 1.5rem;
+  }
+
+  .filter-bar {
+    padding: 10px 12px;
+  }
+
+  .filter-bar .form-control-sm,
+  .filter-bar .form-select-sm,
+  .filter-bar .btn-sm {
+    height: 36px;
+    font-size: 0.8125rem;
   }
 }
 

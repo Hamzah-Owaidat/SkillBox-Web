@@ -70,7 +70,6 @@ class Service extends Model
     }
 
     public static function delete($id) {
-        
         $stmt = self::db()->prepare("DELETE FROM " . static::$table . " WHERE id = ?");
         return $stmt->execute([$id]);
     }
@@ -86,31 +85,62 @@ class Service extends Model
             ORDER BY s.id ASC
         ");
         $stmt->execute();
-        $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        return $services;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function paginate($limit = 10, $page = 1) {
+    public static function paginate($limit = 10, $page = 1, $search = '', $sortBy = 'id', $sortOrder = 'ASC') {
         $offset = ($page - 1) * $limit;
+        
+        // Build WHERE clause
+        $whereConditions = [];
+        $params = [];
+        
+        if (!empty($search)) {
+            $whereConditions[] = "(s.title LIKE ? OR s.description LIKE ?)";
+            $searchParam = "%{$search}%";
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+        }
+        
+        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
-        $stmt = self::db()->prepare("
+        // Validate sort parameters
+        $allowedSortColumns = ['id', 'title', 'created_at', 'updated_at'];
+        $sortBy = in_array($sortBy, $allowedSortColumns) ? $sortBy : 'id';
+        $sortOrder = strtoupper($sortOrder) === 'DESC' ? 'DESC' : 'ASC';
+
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM services s {$whereClause}";
+        $countStmt = self::db()->prepare($countSql);
+        $countStmt->execute($params);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated data
+        $sql = "
             SELECT s.*, 
-                c.full_name AS created_by_name, 
+                c.full_name AS created_by_name,
                 u.full_name AS updated_by_name
             FROM services s
             LEFT JOIN users c ON s.created_by = c.id
             LEFT JOIN users u ON s.updated_by = u.id
-            ORDER BY s.id ASC
-            LIMIT :limit OFFSET :offset
-        ");
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            {$whereClause}
+            ORDER BY s.{$sortBy} {$sortOrder}
+            LIMIT ? OFFSET ?
+        ";
+        
+        $stmt = self::db()->prepare($sql);
+        
+        // Bind search params
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value);
+        }
+        
+        // Bind pagination params
+        $stmt->bindValue(count($params) + 1, (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(count($params) + 2, (int)$offset, PDO::PARAM_INT);
+        
         $stmt->execute();
         $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $countStmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
-        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         return [
             'data' => $services,
@@ -149,5 +179,4 @@ class Service extends Model
         $stmt->execute([':service_id' => $serviceId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
 }

@@ -2,6 +2,14 @@
 $title = "Portfolios Management";
 
 ob_start();
+
+// Get current filters
+$currentSearch = isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '';
+$currentStatus = isset($_GET['status']) ? htmlspecialchars($_GET['status']) : '';
+$currentRole = isset($_GET['role']) ? (int)$_GET['role'] : '';
+$currentSortBy = isset($_GET['sort_by']) ? htmlspecialchars($_GET['sort_by']) : 'created_at';
+$currentSortOrder = isset($_GET['sort_order']) ? htmlspecialchars($_GET['sort_order']) : 'DESC';
+$currentLimit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,6 +19,128 @@ ob_start();
         <i class="fas fa-file-excel me-2"></i> Export to Excel
       </button>
     </div>
+</div>
+
+<!-- Summary Stats (Optional) -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-warning">Pending</h5>
+        <h3><?= $totalPortfolios['pending'] ?? 0 ?></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-success">Approved</h5>
+        <h3><?= $totalPortfolios['approved'] ?? 0 ?></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-danger">Rejected</h5>
+        <h3><?= $totalPortfolios['rejected'] ?? 0 ?></h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="text-primary">Total</h5>
+        <h3><?= $pagination['total'] ?></h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Search & Filter Section -->
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" action="<?= $this->baseUrl ?>/dashboard/portfolios" id="filterForm">
+      <div class="row g-3">
+        <!-- Search Input -->
+        <div class="col-md-3">
+          <label class="form-label"><i class="fas fa-search me-2"></i>Search</label>
+          <input type="text"
+            class="form-control"
+            name="search"
+            placeholder="Search by name, email, phone..."
+            value="<?= $currentSearch ?>">
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-check-circle me-2"></i>Status</label>
+          <select class="form-select" name="status">
+            <option value="">All Status</option>
+            <option value="pending" <?= $currentStatus == 'pending' ? 'selected' : '' ?>>Pending</option>
+            <option value="approved" <?= $currentStatus == 'approved' ? 'selected' : '' ?>>Approved</option>
+            <option value="rejected" <?= $currentStatus == 'rejected' ? 'selected' : '' ?>>Rejected</option>
+          </select>
+        </div>
+
+        <!-- Role Filter -->
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-user-tag me-2"></i>Requested Role</label>
+          <select class="form-select" name="role">
+            <option value="">All Roles</option>
+            <?php foreach ($roles as $role): ?>
+              <option value="<?= $role['id'] ?>" <?= $currentRole == $role['id'] ? 'selected' : '' ?>>
+                <?= htmlspecialchars($role['name']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <!-- Sort By -->
+        <div class="col-md-1">
+          <label class="form-label"><i class="fas fa-sort me-2"></i>Sort</label>
+          <select class="form-select" name="sort_by">
+            <option value="id" <?= $currentSortBy == 'id' ? 'selected' : '' ?>>ID</option>
+            <option value="full_name" <?= $currentSortBy == 'full_name' ? 'selected' : '' ?>>Name</option>
+            <option value="email" <?= $currentSortBy == 'email' ? 'selected' : '' ?>>Email</option>
+            <option value="status" <?= $currentSortBy == 'status' ? 'selected' : '' ?>>Status</option>
+            <option value="created_at" <?= $currentSortBy == 'created_at' ? 'selected' : '' ?>>Date</option>
+          </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="col-md-1">
+          <label class="form-label"><i class="fas fa-sort-amount-down me-2"></i>Order</label>
+          <select class="form-select" name="sort_order">
+            <option value="ASC" <?= $currentSortOrder == 'ASC' ? 'selected' : '' ?>>ASC</option>
+            <option value="DESC" <?= $currentSortOrder == 'DESC' ? 'selected' : '' ?>>DESC</option>
+          </select>
+        </div>
+
+        <!-- Rows Per Page -->
+        <div class="col-md-1">
+          <label class="form-label"><i class="fas fa-list me-2"></i>Rows</label>
+          <select class="form-select" name="limit" onchange="document.getElementById('filterForm').submit()">
+            <option value="5" <?= $currentLimit == 5 ? 'selected' : '' ?>>5</option>
+            <option value="10" <?= $currentLimit == 10 ? 'selected' : '' ?>>10</option>
+            <option value="25" <?= $currentLimit == 25 ? 'selected' : '' ?>>25</option>
+            <option value="50" <?= $currentLimit == 50 ? 'selected' : '' ?>>50</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-primary flex-fill">
+            <i class="fas fa-filter me-2"></i>Filter
+          </button>
+          <a href="<?= $this->baseUrl ?>/dashboard/portfolios" class="btn btn-secondary">
+            <i class="fas fa-redo"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
 <div class="card p-3">
@@ -48,7 +178,7 @@ ob_start();
                   <a href="<?= $this->baseUrl . '/' . ltrim(str_replace('public/', '', $portfolio['attachment_path']), '/') ?>" 
                         target="_blank" 
                         class="btn btn-sm btn-info">
-                    <i class="fas fa-file-pdf"></i> View
+                    <i class="fas fa-file-pdf"></i>
                   </a>
                 <?php else: ?>
                   <span class="text-muted">No CV</span>

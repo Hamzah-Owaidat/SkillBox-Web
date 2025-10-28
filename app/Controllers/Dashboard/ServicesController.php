@@ -19,15 +19,21 @@ class ServicesController {
     }
     
     /**
-     * Display all services with pagination
+     * Display all services with pagination, search, and filters
      */
     public function index() {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 5;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
+        
+        // Get filters
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        $sortBy = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'id';
+        $sortOrder = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'ASC';
 
         // Get paginated services
-        $pagination = Service::paginate($limit, $page);
+        $pagination = Service::paginate($limit, $page, $search, $sortBy, $sortOrder);
         $services = $pagination['data'];
+        $totalServices = $pagination['total'];
 
         ob_start();
         require __DIR__ . '/../../../views/dashboard/services.php';
@@ -64,7 +70,6 @@ class ServicesController {
         ]);
 
         if ($serviceId) {
-            
             $_SESSION['toast_message'] = 'Service created successfully.';
             $_SESSION['toast_type'] = 'success';
 
@@ -74,14 +79,13 @@ class ServicesController {
                 "Created service: {$title} (ID: {$serviceId})"
             );
             
-            // ===== SEND NOTIFICATION TO ALL CLIENTS =====
+            // Send notification to all clients
             $this->notifyServiceAction('add', $title, [
                 'id' => $serviceId,
                 'title' => $title,
                 'description' => $description,
                 'image' => $image
             ]);
-            
         } else {
             $_SESSION['toast_message'] = 'Failed to create service.';
             $_SESSION['toast_type'] = 'danger';
@@ -122,7 +126,6 @@ class ServicesController {
         ]);
 
         if ($updateResult) {
-            
             $_SESSION['toast_message'] = 'Service updated successfully.';
             $_SESSION['toast_type'] = 'success';
 
@@ -132,14 +135,13 @@ class ServicesController {
                 "Updated service: {$title} (ID: {$id})"
             );
             
-            // ===== SEND NOTIFICATION TO ALL CLIENTS =====
+            // Send notification to all clients
             $this->notifyServiceAction('edit', $title, [
                 'id' => $id,
                 'title' => $title,
                 'description' => $description,
                 'image' => $image
             ]);
-            
         } else {
             $_SESSION['toast_message'] = 'Failed to update service.';
             $_SESSION['toast_type'] = 'danger';
@@ -165,14 +167,13 @@ class ServicesController {
                 $this->adminId,
                 'service_delete',
                 "Deleted service: {$serviceTitle} (ID: {$id})"
-            );        
+            );
             
-            // ===== SEND NOTIFICATION TO ALL CLIENTS =====
+            // Send notification to all clients
             $this->notifyServiceAction('delete', $serviceTitle, [
                 'id' => $id,
                 'title' => $serviceTitle
             ]);
-            
         } else {
             $_SESSION['toast_message'] = 'Failed to delete service.';
             $_SESSION['toast_type'] = 'danger';
@@ -216,21 +217,19 @@ class ServicesController {
         // Fill data rows
         $row = 2;
         foreach ($services as $service) {
-            
-            // Fill cells
             $sheet->setCellValue("A{$row}", $service['id']);
             $sheet->setCellValue("B{$row}", $service['title']);
             $sheet->setCellValue("C{$row}", $service['image']);
             $sheet->setCellValue("D{$row}", $service['description']);
-            $sheet->setCellValue("F{$row}", $service['created_by_name'] ?? 'N/A');
-            $sheet->setCellValue("G{$row}", $service['updated_by_name'] ?? 'N/A');
-            $sheet->setCellValue("H{$row}", $service['created_at'] ?? '');
-            $sheet->setCellValue("I{$row}", $service['updated_at'] ?? '');
+            $sheet->setCellValue("E{$row}", $service['created_by_name'] ?? 'N/A');
+            $sheet->setCellValue("F{$row}", $service['updated_by_name'] ?? 'N/A');
+            $sheet->setCellValue("G{$row}", $service['created_at'] ?? '');
+            $sheet->setCellValue("H{$row}", $service['updated_at'] ?? '');
             $row++;
         }
 
         // Auto-size all columns
-        foreach (range('A', 'I') as $col) {
+        foreach (range('A', 'H') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -244,13 +243,12 @@ class ServicesController {
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="services_export_' . date('Y-m-d_H-i-s') . '.xlsx"');
         header('Cache-Control: max-age=0');
-        header('Cache-Control: max-age=1'); // For IE
-        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+        header('Cache-Control: max-age=1');
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
         header('Cache-Control: cache, must-revalidate');
         header('Pragma: public');
 
-        // Generate and output Excel file
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
@@ -258,22 +256,15 @@ class ServicesController {
     
     /**
      * Helper method to send notifications for service actions
-     * 
-     * @param string $action Action type: 'add', 'edit', 'delete'
-     * @param string $serviceTitle Service title
-     * @param array $serviceData Additional service data
      */
     protected function notifyServiceAction($action, $serviceTitle, $serviceData = []) {
         try {
-            // Get all client user IDs (excluding admins)
             $clientIds = NotificationHelper::getAllClientIds();
-            \debug_log('Client IDs: ' . json_encode($clientIds));
             
             if (empty($clientIds)) {
-                return; // No clients to notify
+                return;
             }
             
-            // Prepare notification based on action
             $notifications = [
                 'add' => [
                     'title' => 'New Service Available',
@@ -294,7 +285,6 @@ class ServicesController {
             
             $notificationData = $notifications[$action] ?? $notifications['add'];
             
-            // Send notification to all clients
             NotificationHelper::send(
                 $this->adminId,
                 $clientIds,
@@ -304,9 +294,7 @@ class ServicesController {
                 true,
                 true 
             );
-            
         } catch (\Exception $e) {
-            // Log error but don't stop execution
             error_log("Failed to send service notification: " . $e->getMessage());
         }
     }

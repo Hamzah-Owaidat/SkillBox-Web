@@ -2,6 +2,12 @@
 $title = "Services Management";
 
 ob_start();
+
+// Get current filters
+$currentSearch = isset($_GET['search']) ? htmlspecialchars($_GET['search']) : '';
+$currentSortBy = isset($_GET['sort_by']) ? htmlspecialchars($_GET['sort_by']) : 'id';
+$currentSortOrder = isset($_GET['sort_order']) ? htmlspecialchars($_GET['sort_order']) : 'ASC';
+$currentLimit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -16,12 +22,73 @@ ob_start();
     </div>
 </div>
 
+<!-- Search & Filter Section -->
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="GET" action="<?= $this->baseUrl ?>/dashboard/services" id="filterForm">
+      <div class="row g-3">
+        <!-- Search Input -->
+        <div class="col-md-4">
+          <label class="form-label"><i class="fas fa-search me-2"></i>Search</label>
+          <input type="text"
+            class="form-control"
+            name="search"
+            placeholder="Search by title or description..."
+            value="<?= $currentSearch ?>">
+        </div>
+
+        <!-- Sort By -->
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-sort me-2"></i>Sort By</label>
+          <select class="form-select" name="sort_by">
+            <option value="id" <?= $currentSortBy == 'id' ? 'selected' : '' ?>>ID</option>
+            <option value="title" <?= $currentSortBy == 'title' ? 'selected' : '' ?>>Title</option>
+            <option value="created_at" <?= $currentSortBy == 'created_at' ? 'selected' : '' ?>>Created Date</option>
+            <option value="updated_at" <?= $currentSortBy == 'updated_at' ? 'selected' : '' ?>>Updated Date</option>
+          </select>
+        </div>
+
+        <!-- Sort Order -->
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-sort-amount-down me-2"></i>Order</label>
+          <select class="form-select" name="sort_order">
+            <option value="ASC" <?= $currentSortOrder == 'ASC' ? 'selected' : '' ?>>Ascending</option>
+            <option value="DESC" <?= $currentSortOrder == 'DESC' ? 'selected' : '' ?>>Descending</option>
+          </select>
+        </div>
+
+        <!-- Rows Per Page -->
+        <div class="col-md-2">
+          <label class="form-label"><i class="fas fa-list me-2"></i>Rows/Page</label>
+          <select class="form-select" name="limit" onchange="document.getElementById('filterForm').submit()">
+            <option value="5" <?= $currentLimit == 5 ? 'selected' : '' ?>>5</option>
+            <option value="10" <?= $currentLimit == 10 ? 'selected' : '' ?>>10</option>
+            <option value="25" <?= $currentLimit == 25 ? 'selected' : '' ?>>25</option>
+            <option value="50" <?= $currentLimit == 50 ? 'selected' : '' ?>>50</option>
+            <option value="100" <?= $currentLimit == 100 ? 'selected' : '' ?>>100</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-primary flex-fill">
+            <i class="fas fa-filter me-2"></i>Filter
+          </button>
+          <a href="<?= $this->baseUrl ?>/dashboard/services" class="btn btn-secondary">
+            <i class="fas fa-redo"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="card p-3">
   <div class="table-responsive-custom">
     <table class="table table-hover align-middle">
       <thead class="table-light">
         <tr>
-          <th>ID</th>
+          <th>#</th>
           <th>Icon/Emoji</th>
           <th>Title</th>
           <th>Description</th>
@@ -34,9 +101,14 @@ ob_start();
       </thead>
       <tbody>
         <?php if (isset($services) && !empty($services)): ?>
-          <?php foreach ($services as $service): ?>
+          <?php
+          // Calculate row number (continuous across pages)
+          $rowNumber = ($pagination['page'] - 1) * $pagination['limit'];
+          foreach ($services as $service):
+            $rowNumber++;
+          ?>
             <tr>
-              <td><?= htmlspecialchars($service['id']) ?></td>
+              <td><strong><?= $rowNumber ?></strong></td>
               <td>
                 <?php if (!empty($service['image'])): ?>
                   <span style="font-size: 2rem;"><?= htmlspecialchars($service['image']) ?></span>
@@ -46,10 +118,38 @@ ob_start();
               </td>
               <td><?= htmlspecialchars($service['title']) ?></td>
               <td><?= htmlspecialchars(substr($service['description'], 0, 60)) ?>...</td>
-              <td><?= htmlspecialchars($service['created_by_name'] ?? 'N/A') ?></td>
-              <td><?= htmlspecialchars($service['updated_by_name'] ?? 'N/A') ?></td>
-              <td><?= date('Y-m-d H:i', strtotime($service['created_at'])) ?></td>
-              <td><?= date('Y-m-d H:i', strtotime($service['updated_at'])) ?></td>
+              <td>
+                <?php if (!empty($service['created_by_name'])): ?>
+                  <small class="text-muted">
+                    <i class="fas fa-user-plus me-1"></i>
+                    <?= htmlspecialchars($service['created_by_name']) ?>
+                  </small>
+                <?php else: ?>
+                  <small class="text-muted">-</small>
+                <?php endif; ?>
+              </td>
+              <td>
+                <?php if (!empty($service['updated_by_name'])): ?>
+                  <small class="text-muted">
+                    <i class="fas fa-user-edit me-1"></i>
+                    <?= htmlspecialchars($service['updated_by_name']) ?>
+                  </small>
+                <?php else: ?>
+                  <small class="text-muted">-</small>
+                <?php endif; ?>
+              </td>
+              <td>
+                <small class="text-muted">
+                  <i class="fas fa-calendar me-1"></i>
+                  <?= date('M d, Y', strtotime($service['created_at'])) ?>
+                </small>
+              </td>
+              <td>
+                <small class="text-muted">
+                  <i class="fas fa-clock me-1"></i>
+                  <?= date('M d, Y', strtotime($service['updated_at'])) ?>
+                </small>
+              </td>
               <td class="text-center">
                 <button class="btn btn-sm btn-info" 
                         data-bs-toggle="modal" 
@@ -137,11 +237,6 @@ ob_start();
               'content' => ''
           ];
           ob_start();
-          
-          // Get current supervisor IDs
-          $currentSupervisorIds = array_map(function($sup) {
-              return $sup['id'];
-          }, $service['supervisors'] ?? []);
           ?>
           <form method="POST" action="<?= $this->baseUrl ?>/dashboard/services/<?= $service['id'] ?>">
             <input type="hidden" name="_method" value="PATCH">
@@ -174,7 +269,6 @@ ob_start();
                       required
                       placeholder="Enter service description"><?= htmlspecialchars($service['description']) ?></textarea>
               </div>
-            
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -192,34 +286,68 @@ ob_start();
 
         <?php endforeach; ?>
       <?php else: ?>
-        <tr><td colspan="10" class="text-center py-4">
+        <tr><td colspan="9" class="text-center py-4">
           <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
           <p class="text-muted">No Services found.</p>
         </td></tr>
       <?php endif; ?>
-            
       </tbody>
     </table>
   </div>
 
- <?php if ($pagination['pages'] > 1): ?>
-  <div class="d-flex justify-content-center mt-2">
+  <!-- Pagination -->
+  <?php if ($pagination['pages'] > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <div>
+        <small class="text-muted">
+          Showing <?= ($pagination['page'] - 1) * $pagination['limit'] + 1 ?>
+          to <?= min($pagination['page'] * $pagination['limit'], $pagination['total']) ?>
+          of <?= $pagination['total'] ?> entries
+        </small>
+      </div>
       <nav>
-          <ul class="pagination">
-              <li class="page-item <?= $pagination['page'] == 1 ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $pagination['page'] - 1 ?>">&laquo;</a>
-              </li>
-              <?php for ($i = 1; $i <= $pagination['pages']; $i++): ?>
-                  <li class="page-item <?= $i == $pagination['page'] ? 'active' : '' ?>">
-                      <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
-                  </li>
-              <?php endfor; ?>
-              <li class="page-item <?= $pagination['page'] == $pagination['pages'] ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $pagination['page'] + 1 ?>">&raquo;</a>
-              </li>
-          </ul>
+        <ul class="pagination mb-0">
+          <li class="page-item <?= $pagination['page'] == 1 ? 'disabled' : '' ?>">
+            <a class="page-link" href="?page=<?= $pagination['page'] - 1 ?>&search=<?= urlencode($currentSearch) ?>&sort_by=<?= $currentSortBy ?>&sort_order=<?= $currentSortOrder ?>&limit=<?= $currentLimit ?>">&laquo;</a>
+          </li>
+
+          <?php
+          // Smart pagination: show first, last, and pages around current
+          $showPages = [];
+          $showPages[] = 1; // Always show first page
+
+          // Show pages around current page
+          for ($i = max(2, $pagination['page'] - 2); $i <= min($pagination['pages'] - 1, $pagination['page'] + 2); $i++) {
+            $showPages[] = $i;
+          }
+
+          if ($pagination['pages'] > 1) {
+            $showPages[] = $pagination['pages']; // Always show last page
+          }
+
+          $showPages = array_unique($showPages);
+          sort($showPages);
+
+          $prevPage = 0;
+          foreach ($showPages as $i):
+            // Add ellipsis if there's a gap
+            if ($i - $prevPage > 1): ?>
+              <li class="page-item disabled"><span class="page-link">...</span></li>
+            <?php endif; ?>
+
+            <li class="page-item <?= $i == $pagination['page'] ? 'active' : '' ?>">
+              <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($currentSearch) ?>&sort_by=<?= $currentSortBy ?>&sort_order=<?= $currentSortOrder ?>&limit=<?= $currentLimit ?>"><?= $i ?></a>
+            </li>
+
+            <?php $prevPage = $i; ?>
+          <?php endforeach; ?>
+
+          <li class="page-item <?= $pagination['page'] == $pagination['pages'] ? 'disabled' : '' ?>">
+            <a class="page-link" href="?page=<?= $pagination['page'] + 1 ?>&search=<?= urlencode($currentSearch) ?>&sort_by=<?= $currentSortBy ?>&sort_order=<?= $currentSortOrder ?>&limit=<?= $currentLimit ?>">&raquo;</a>
+          </li>
+        </ul>
       </nav>
-  </div>
+    </div>
   <?php endif; ?>
 </div>
 

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Dashboard;
 
 use App\Models\Portfolio;
@@ -6,31 +7,44 @@ use App\Models\Role;
 use App\Helpers\NotificationHelper;
 use App\Models\Activity;
 
-
-class PortfoliosController {
+class PortfoliosController
+{
     protected $baseUrl = '/skillbox/public';
     protected $adminId;
-    
-    public function __construct() {
+
+    public function __construct()
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $this->adminId = $_SESSION['user_id'] ?? null;
     }
-    
-    public function index() {
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 5;
 
-        $pagination = Portfolio::paginate($limit, $page);
+    public function index()
+    {
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
+
+        // Get filters
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
+        $roleFilter = isset($_GET['role']) ? (int)$_GET['role'] : null;
+        $sortBy = isset($_GET['sort_by']) ? $_GET['sort_by'] : 'created_at';
+        $sortOrder = isset($_GET['sort_order']) ? $_GET['sort_order'] : 'DESC';
+
+        $pagination = Portfolio::paginate($limit, $page, $search, $statusFilter, $roleFilter, $sortBy, $sortOrder);
         $portfolios = $pagination['data'];
+        $roles = Role::getAll();
+        // ✅ Get status counts for summary stats
+        $totalPortfolios = Portfolio::getStatusCounts();
 
         ob_start();
         require __DIR__ . '/../../../views/dashboard/portfolios.php';
     }
 
     // Export to Excel
-    public function export() {
+    public function export()
+    {
         $portfolios = Portfolio::getAll();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -38,24 +52,37 @@ class PortfoliosController {
 
         // Headers
         $headers = [
-            'ID', 'User', 'Full Name', 'Email', 'Phone', 'Address', 
-            'LinkedIn', 'Requested Role', 'Services', 'Status', 
-            'Reviewed By', 'Reviewed At', 'Created At', 'Updated At'
+            'ID',
+            'User',
+            'Full Name',
+            'Email',
+            'Phone',
+            'Address',
+            'LinkedIn',
+            'Requested Role',
+            'Services',
+            'Status',
+            'Reviewed By',
+            'Reviewed At',
+            'Created At',
+            'Updated At'
         ];
 
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '1', $header);
             $sheet->getStyle($col . '1')->getFont()->setBold(true);
+            $sheet->getStyle($col . '1')->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFE0E0E0');
             $col++;
         }
 
-        
         // Data
         $row = 2;
         foreach ($portfolios as $p) {
             $services = isset($p['services']) ? implode(", ", array_column($p['services'], 'title')) : 'N/A';
-            
+
             $sheet->setCellValue("A{$row}", $p['id']);
             $sheet->setCellValue("B{$row}", $p['user_name'] ?? 'N/A');
             $sheet->setCellValue("C{$row}", $p['full_name']);
@@ -94,8 +121,8 @@ class PortfoliosController {
         exit;
     }
 
-
-    public function accept($id) {
+    public function accept($id)
+    {
         $portfolio = Portfolio::find($id);
         if (!$portfolio) {
             $_SESSION['toast_message'] = 'Portfolio not found.';
@@ -128,15 +155,15 @@ class PortfoliosController {
                 "Approved portfolio ID: {$id} for user ID: {$portfolio['user_id']}, assigned role ID: {$roleId}"
             );
 
-            // ===== SEND PRIVATE NOTIFICATION TO SPECIFIC USER =====
+            // Send notification
             NotificationHelper::send(
-                $this->adminId,              // Sender (admin)
-                $portfolio['user_id'],       // Receiver (the portfolio owner) - ONLY ONE USER
-                'Portfolio Approved! 🎉',    // Title
-                'Your portfolio has been approved. You can now access your new role.',  // Message
-                'accept',                     // Type
-                true,                         // Send real-time via Pusher
-                false                         // Do NOT broadcast publicly
+                $this->adminId,
+                $portfolio['user_id'],
+                'Portfolio Approved! 🎉',
+                'Your portfolio has been approved. You can now access your new role.',
+                'accept',
+                true,
+                false
             );
         } else {
             $_SESSION['toast_message'] = 'Failed to approve portfolio.';
@@ -148,19 +175,20 @@ class PortfoliosController {
     }
 
     // Reject portfolio
-    public function reject($id) {
+    public function reject($id)
+    {
         $portfolio = Portfolio::find($id);
-        
+
         if (!$portfolio) {
             $_SESSION['toast_message'] = 'Portfolio not found.';
             $_SESSION['toast_type'] = 'danger';
             header("Location: {$this->baseUrl}/dashboard/portfolios");
             exit;
         }
-        
+
         // Reject the portfolio
         $result = Portfolio::reject($id, $this->adminId);
-        
+
         if ($result) {
             $_SESSION['toast_message'] = 'Portfolio rejected.';
             $_SESSION['toast_type'] = 'success';
@@ -170,38 +198,38 @@ class PortfoliosController {
                 'portfolio_reject',
                 "Rejected portfolio ID: {$id} for user ID: {$portfolio['user_id']}"
             );
-            
-            // ===== SEND PRIVATE NOTIFICATION TO SPECIFIC USER =====
+
+            // Send notification
             NotificationHelper::send(
-                $this->adminId,              // Sender (admin)
-                $portfolio['user_id'],       // Receiver (the portfolio owner) - ONLY ONE USER
-                'Portfolio Rejected',         // Title
-                'Unfortunately, your portfolio has been rejected. Please review and resubmit.',  // Message
-                'reject',                     // Type
-                true,                         // Send real-time via Pusher
-                false                         // Do NOT broadcast publicly
+                $this->adminId,
+                $portfolio['user_id'],
+                'Portfolio Rejected',
+                'Unfortunately, your portfolio has been rejected. Please review and resubmit.',
+                'reject',
+                true,
+                false
             );
-            
         } else {
             $_SESSION['toast_message'] = 'Failed to reject portfolio.';
             $_SESSION['toast_type'] = 'danger';
         }
-        
+
         header("Location: {$this->baseUrl}/dashboard/portfolios");
         exit;
     }
 
     // Delete portfolio
-    public function delete($id) {
+    public function delete($id)
+    {
         // Get portfolio to delete file
         $portfolio = Portfolio::find($id);
-        
+
         if ($portfolio && Portfolio::delete($id)) {
             // Delete file if exists
             if (!empty($portfolio['attachment_path']) && file_exists($portfolio['attachment_path'])) {
                 unlink($portfolio['attachment_path']);
             }
-            
+
             $_SESSION['toast_message'] = 'Portfolio deleted successfully.';
             $_SESSION['toast_type'] = 'success';
 
@@ -212,35 +240,35 @@ class PortfoliosController {
             );
         } else {
             $_SESSION['toast_message'] = 'Failed to delete portfolio.';
-            $_SESSION['toast_type'] = 'error';
+            $_SESSION['toast_type'] = 'danger';
         }
-        
+
         header("Location: {$this->baseUrl}/dashboard/portfolios");
         exit;
     }
 
     /**
      * Send notification with custom recipients
-     * Example: Notify admin
      */
-    public function notifySpecificUsers($portfolioId) {
+    public function notifySpecificUsers($portfolioId)
+    {
         $portfolio = Portfolio::find($portfolioId);
-        
+
         // Get specific users to notify
         $adminIds = NotificationHelper::getAllAdminIds();
-        
+
         // Combine the IDs
         $recipientIds = array_merge($adminIds);
-        
+
         // Send PRIVATE notification to specific users
         NotificationHelper::send(
             $this->adminId,
-            $recipientIds,                    // Array of specific user IDs
+            $recipientIds,
             'Urgent: Portfolio Requires Attention',
             "Portfolio #{$portfolioId} requires immediate review.",
             'warning',
-            true,                             // Real-time
-            false                             // Private only (not public broadcast)
+            true,
+            false
         );
     }
 }

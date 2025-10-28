@@ -10,11 +10,17 @@ class UsersController {
 
     public function index() {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-        $limit = 5;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
+        
+        // Get filters
+        $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+        $roleFilter = isset($_GET['role']) ? (int)$_GET['role'] : null;
+        $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 
-        $pagination = User::paginate($limit, $page);
+        $pagination = User::paginate($limit, $page, $search, $roleFilter, $statusFilter);
         $users = $pagination['data'];
         $roles = Role::getAll();
+        $totalUsers = $pagination['total'];
 
         ob_start();
         require __DIR__ . '/../../../views/dashboard/users.php';
@@ -32,7 +38,7 @@ class UsersController {
         $password = trim($_POST['password'] ?? '');
         $roleId = (int)($_POST['role_id'] ?? 2);
 
-        // Validation (same as before)...
+        // Validation
         if (empty($fullName) || empty($email) || empty($password)) {
             $_SESSION['toast_message'] = 'All fields are required.';
             $_SESSION['toast_type'] = 'danger';
@@ -77,13 +83,11 @@ class UsersController {
             $_SESSION['toast_message'] = 'User created successfully.';
             $_SESSION['toast_type'] = 'success';
 
-            // ✅ Log activity
             Activity::log(
                 $_SESSION['user_id'] ?? null,
                 'user_create',
                 "Created user: {$fullName} ({$email})"
             );
-
         } else {
             $_SESSION['toast_message'] = 'Failed to create user.';
             $_SESSION['toast_type'] = 'danger';
@@ -105,8 +109,6 @@ class UsersController {
         $password = trim($_POST['password'] ?? '');
         $roleId = (int)($_POST['role_id'] ?? 2);
 
-        // Validation (same as before)...
-
         $updateData = [
             'full_name' => $fullName,
             'email' => $email,
@@ -121,7 +123,6 @@ class UsersController {
             $_SESSION['toast_message'] = 'User updated successfully.';
             $_SESSION['toast_type'] = 'success';
 
-            // ✅ Log activity
             Activity::log(
                 $_SESSION['user_id'] ?? null,
                 'user_update',
@@ -149,13 +150,11 @@ class UsersController {
             $_SESSION['toast_message'] = 'User status updated successfully.';
             $_SESSION['toast_type'] = 'success';
 
-            // ✅ Log activity
             Activity::log(
                 $_SESSION['user_id'] ?? null,
                 'user_toggle_status',
                 "Toggled status for user ID {$id}"
             );
-
         } else {
             $_SESSION['toast_message'] = 'Failed to update user status.';
             $_SESSION['toast_type'] = 'danger';
@@ -179,13 +178,11 @@ class UsersController {
             $_SESSION['toast_message'] = 'User deleted successfully.';
             $_SESSION['toast_type'] = 'success';
 
-            // ✅ Log activity
             Activity::log(
                 $_SESSION['user_id'] ?? null,
                 'user_delete',
                 "Deleted user: {$user['full_name']} ({$user['email']})"
             );
-
         } else {
             $_SESSION['toast_message'] = 'Failed to delete user.';
             $_SESSION['toast_type'] = 'danger';
@@ -219,8 +216,8 @@ class UsersController {
             $sheet->setCellValue("C{$row}", $user['email']);
             $sheet->setCellValue("D{$row}", $user['role_name'] ?? 'N/A');
             $sheet->setCellValue("E{$row}", ucfirst($user['status']));
-            $sheet->setCellValue("F{$row}", $user['created_by'] ?? 'null');
-            $sheet->setCellValue("G{$row}", $user['updated_by'] ?? 'null');
+            $sheet->setCellValue("F{$row}", $user['created_by_name'] ?? 'N/A');
+            $sheet->setCellValue("G{$row}", $user['updated_by_name'] ?? 'N/A');
             $sheet->setCellValue("H{$row}", $user['created_at'] ?? '');
             $sheet->setCellValue("I{$row}", $user['updated_at'] ?? '');
             $row++;
@@ -230,7 +227,6 @@ class UsersController {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        // ✅ Log activity
         Activity::log(
             $_SESSION['user_id'] ?? null,
             'user_export',

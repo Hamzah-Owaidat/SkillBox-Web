@@ -34,7 +34,6 @@ class User extends Model {
         return self::db()->lastInsertId();
     }
 
-    // ✅ NEW: Update user
     public static function update($id, array $data) {
         $fields = [];
         $values = [];
@@ -59,7 +58,6 @@ class User extends Model {
             $values[] = $data['role_id'];
         }
 
-        // 👇 Add updated_by tracking
         if (isset($data['updated_by'])) {
             $fields[] = "updated_by = ?";
             $values[] = $data['updated_by'];
@@ -82,7 +80,6 @@ class User extends Model {
         return $stmt->execute([$id]);
     }
 
-    // ✅ Toggle user status (active/inactive)
     public static function toggleStatus($id) {
         $stmt = self::db()->prepare("
             UPDATE " . static::$table . "
@@ -95,18 +92,12 @@ class User extends Model {
         return $stmt->execute([$id]);
     }
 
-    // ✅ Update status specifically
-    // public static function updateStatus($id, $status) {
-    //     $stmt = self::db()->prepare("UPDATE " . static::$table . " SET status = ? WHERE id = ?");
-    //     return $stmt->execute([$status, $id]);
-    // }
-
     public static function getAll() {
         $stmt = self::db()->prepare("
             SELECT u.*, 
                 r.name AS role_name, 
-                c.full_name AS created_by, 
-                up.full_name AS updated_by
+                c.full_name AS created_by_name, 
+                up.full_name AS updated_by_name
             FROM users u
                 LEFT JOIN roles r ON u.role_id = r.id
                 LEFT JOIN users c ON u.created_by = c.id
@@ -117,23 +108,66 @@ class User extends Model {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function paginate($limit = 10, $page = 1) {
+    public static function paginate($limit = 10, $page = 1, $search = '', $roleFilter = null, $statusFilter = '') {
         $offset = ($page - 1) * $limit;
+        
+        // Build WHERE clause
+        $whereConditions = [];
+        $params = [];
+        
+        if (!empty($search)) {
+            $whereConditions[] = "(u.full_name LIKE ? OR u.email LIKE ?)";
+            $searchParam = "%{$search}%";
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+        }
+        
+        if ($roleFilter !== null && $roleFilter > 0) {
+            $whereConditions[] = "u.role_id = ?";
+            $params[] = $roleFilter;
+        }
+        
+        if (!empty($statusFilter)) {
+            $whereConditions[] = "u.status = ?";
+            $params[] = $statusFilter;
+        }
+        
+        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
-        $stmt = self::db()->prepare("
-            SELECT users.*, roles.name AS role_name
-            FROM users
-            LEFT JOIN roles ON users.role_id = roles.id
-            ORDER BY users.id ASC
-            LIMIT :limit OFFSET :offset
-        ");
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        // Get total count
+        $countSql = "SELECT COUNT(*) as total FROM users u {$whereClause}";
+        $countStmt = self::db()->prepare($countSql);
+        $countStmt->execute($params);
+        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
+
+        // Get paginated data
+        $sql = "
+            SELECT u.*, 
+                r.name AS role_name,
+                c.full_name AS created_by_name,
+                up.full_name AS updated_by_name
+            FROM users u
+            LEFT JOIN roles r ON u.role_id = r.id
+            LEFT JOIN users c ON u.created_by = c.id
+            LEFT JOIN users up ON u.updated_by = up.id
+            {$whereClause}
+            ORDER BY u.id ASC
+            LIMIT ? OFFSET ?
+        ";
+        
+        $stmt = self::db()->prepare($sql);
+        
+        // Bind search and filter params
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key + 1, $value);
+        }
+        
+        // Bind pagination params
+        $stmt->bindValue(count($params) + 1, (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(count($params) + 2, (int)$offset, PDO::PARAM_INT);
+        
         $stmt->execute();
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $countStmt = self::db()->query("SELECT COUNT(*) as total FROM " . static::$table);
-        $total = $countStmt->fetch(PDO::FETCH_ASSOC)['total'];
 
         return [
             'data' => $users,
@@ -187,7 +221,7 @@ class User extends Model {
         }
     
         if (empty($fields)) {
-            return false; // Nothing to update
+            return false;
         }
     
         $values[] = $id;
@@ -209,6 +243,4 @@ class User extends Model {
         if (!$user) return false;
         return password_verify($password, $user['password']);
     }
-    
-    
 }
