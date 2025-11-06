@@ -10,6 +10,7 @@ use App\Controllers\PortfolioController;
 use App\Controllers\ServiceController;
 use App\Controllers\UserController;
 use App\Controllers\ChatController;
+use App\Controllers\NotificationsController;
 
 // Auth
 $router->get('/login', [AuthController::class, 'showLoginForm']);
@@ -37,7 +38,10 @@ $router->post('/portfolio/update/{id}', [PortfolioController::class, 'updatePort
 $router->get('/services', [ServiceController::class, 'index']);
 $router->get('/services/{id}', [ServiceController::class, 'show']);
 
-// Chat routes
+// Notifications 
+$router->get('/notifications', [NotificationsController::class, 'index']);
+
+// Chats
 $router->get('/chat', [ChatController::class, 'index']);
 $router->get('/chat/start/{id}', [ChatController::class, 'start']);
 $router->get('/chat/conversation/{id}', [ChatController::class, 'conversation']);

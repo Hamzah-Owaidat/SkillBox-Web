@@ -21,14 +21,17 @@ $userId = $_SESSION['user_id'] ?? null;
           <li class="nav-item"><a href="<?= $baseUrl ?>/login" class="nav-link">Get Started</a></li>
 
         <?php else: ?>
-          <!-- Common Links for all logged-in users -->
+          <!-- Common link for all logged-in users -->
           <li class="nav-item"><a href="<?= $baseUrl ?>/" class="nav-link">Home</a></li>
 
-          <?php if ($role === 'client'): ?>
-            <li class="nav-item"><a href="<?= $baseUrl ?>/submit-cv" class="nav-link">Submit CV</a></li>
-            <li class="nav-item"><a href="<?= $baseUrl ?>/services" class="nav-link">Services</a></li>
-          <?php else: ?>
+          <?php if ($role === 'admin'): ?>
             <li class="nav-item"><a href="<?= $baseUrl ?>/dashboard" class="nav-link">Dashboard</a></li>
+
+          <?php elseif ($role === 'client'): ?>
+            <li class="nav-item"><a href="<?= $baseUrl ?>/submit-cv" class="nav-link">Submit CV</a></li>
+
+          <?php elseif ($role === 'worker'): ?>
+            <li class="nav-item"><a href="<?= $baseUrl ?>/chat" class="nav-link">Chats</a></li>
           <?php endif; ?>
 
           <!-- 🔔 Notification Dropdown -->
@@ -41,16 +44,16 @@ $userId = $_SESSION['user_id'] ?? null;
               </span>
             </a>
 
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="width: 350px; max-height: 450px; overflow-y: auto;" id="notificationDropdown">
-              <li class="dropdown-header d-flex justify-content-between align-items-center border-bottom pb-2">
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="width: 380px; overflow: visible;" id="notificationDropdown">
+              <li class="dropdown-header d-flex justify-content-between align-items-center border-bottom pb-2" style="background: white;">
                 <h6 class="mb-0">Notifications</h6>
-                <button class="btn btn-sm btn-link text-primary p-0" style="text-decoration: none; font-size: 0.85rem;">
+                <button class="btn btn-sm btn-link text-primary p-0" onclick="markAllNotificationsAsRead()" style="text-decoration: none; font-size: 0.85rem; white-space: nowrap;">
                   Mark all read
                 </button>
               </li>
 
               <!-- Notification List Container -->
-              <div id="notification-list-container">
+              <div id="notification-list-container" style="max-height: 400px; overflow-y: auto; overflow-x: hidden;">
                 <li class="text-center py-3">
                   <div class="spinner-border spinner-border-sm text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -58,7 +61,7 @@ $userId = $_SESSION['user_id'] ?? null;
                 </li>
               </div>
 
-              <li class="border-top">
+              <li class="border-top" style="background: white;">
                 <a class="dropdown-item text-center text-primary fw-semibold py-2" href="<?= $baseUrl ?>/notifications">
                   View all notifications
                 </a>
@@ -73,10 +76,12 @@ $userId = $_SESSION['user_id'] ?? null;
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li><a class="dropdown-item" href="<?= $baseUrl ?>/profile">Profile</a></li>
-              <?php if ($role): ?>
+              <?php if ($role === 'client'): ?>
                 <li><a class="dropdown-item" href="<?= $baseUrl ?>/chat">Chats</a></li>
               <?php endif; ?>
-              <li><hr class="dropdown-divider"></li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
               <li><a class="dropdown-item" href="<?= $baseUrl ?>/logout">Logout</a></li>
             </ul>
           </li>
