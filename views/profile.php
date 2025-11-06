@@ -51,7 +51,7 @@
                 <tr>
                   <td><?= htmlspecialchars($p['full_name']) ?></td>
                   <td><?= htmlspecialchars($p['email']) ?></td>
-                  <td><?= htmlspecialchars($p['requested_role']) ?></td>
+                  <td><?= htmlspecialchars($p['requested_role_name'] ?? 'N/A') ?></td>
                   <td>
                     <span class="badge 
                       <?= $p['status'] === 'pending' ? 'bg-warning' : ($p['status'] === 'accepted' ? 'bg-success' : 'bg-danger') ?>">

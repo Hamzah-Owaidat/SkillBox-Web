@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\AuthMiddleware;
@@ -7,21 +8,24 @@ use App\Models\Portfolio;
 use App\Models\Role;
 use App\Models\Service;
 
-class PortfolioController {
+class PortfolioController
+{
     protected $baseUrl = '/skillbox/public';
 
-    public function index() {
+    public function index()
+    {
         $allRoles = Role::getAll();
 
         // Only keep worker and supervisor
         $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker']));
-        
+
         $services = Service::getAll();
-        
+
         require __DIR__ . '/../../views/submitCv.php';
     }
 
-    public function store() {
+    public function store()
+    {
         if (session_status() === PHP_SESSION_NONE) session_start();
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
@@ -31,7 +35,7 @@ class PortfolioController {
 
         // Get the role ID from form
         $roleId = $_POST['requested_role'] ?? null;
-        
+
 
         if (!$roleId) {
             $_SESSION['toast_message'] = 'Invalid role selected';
@@ -47,8 +51,8 @@ class PortfolioController {
             'phone'          => htmlspecialchars($_POST['phone'] ?? ''),
             'address'        => htmlspecialchars($_POST['address'] ?? ''),
             'linkedin'       => htmlspecialchars($_POST['linkedin'] ?? ''),
-            'requested_role' => $roleId, // Store the role NAME not ID
-            'attachment_path'=> null,
+            'requested_role' => (int)$roleId,
+            'attachment_path' => null,
         ];
 
         // Upload file
@@ -91,7 +95,8 @@ class PortfolioController {
     }
 
     // Delete a portfolio (only if pending)
-    public function deletePortfolio($id) {
+    public function deletePortfolio($id)
+    {
         AuthMiddleware::web();
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
@@ -116,13 +121,14 @@ class PortfolioController {
     }
 
     // Show edit form (reuses submit-cv view)
-    public function showEditForm($id) {
+    public function showEditForm($id)
+    {
         AuthMiddleware::web();
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
 
         $db = Database::getConnection();
-        
+
         // Fetch the portfolio (only if it belongs to user and is pending)
         $stmt = $db->prepare("SELECT * FROM portfolios WHERE id = :id AND user_id = :user_id AND status = 'pending'");
         $stmt->execute([':id' => $id, ':user_id' => $userId]);
@@ -136,13 +142,13 @@ class PortfolioController {
             exit;
         }
 
-        // Convert role name back to ID for the form
         if ($portfolio['requested_role']) {
-            $role = Role::findByName($portfolio['requested_role']);
+            $role = Role::findById($portfolio['requested_role']);
             if ($role) {
                 $portfolio['requested_role_id'] = $role['id'];
             }
         }
+
 
         // Get available roles for the form
         $allRoles = Role::getAll();
@@ -157,7 +163,8 @@ class PortfolioController {
     }
 
     // Update portfolio
-    public function updatePortfolio($id) {
+    public function updatePortfolio($id)
+    {
         AuthMiddleware::web();
         $user = $GLOBALS['auth_user'];
         $userId = $user['id'];
@@ -173,16 +180,15 @@ class PortfolioController {
         $roleId = $_POST['requested_role'] ?? '';
         $selectedServices = $_POST['services'] ?? [];
 
-        // Convert role ID to name
-        $roleName = null;
+        $requestedRoleId = null;
         if ($roleId) {
             $role = Role::findById($roleId);
             if ($role && in_array($role['name'], ['worker'])) {
-                $roleName = $role['name'];
+                $requestedRoleId = (int)$role['id'];
             }
-        }
+        };
 
-        if (empty($full_name) || empty($email) || empty($phone) || empty($address) || !$roleName) {
+        if (empty($full_name) || empty($email) || empty($phone) || empty($address) || !$requestedRoleId) {
             $_SESSION['toast_message'] = 'All required fields must be filled';
             $_SESSION['toast_type'] = 'danger';
             header("Location: /skillbox/public/portfolio/edit/$id");
@@ -202,11 +208,11 @@ class PortfolioController {
             $userId = $GLOBALS['auth_user']['id'];
             $uploadDir = __DIR__ . "/../../public/uploads/portfolios/{$userId}/";
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-        
+
             $date = date('Ymd');
             $fileName = "{$userId}_{$date}_CV.pdf";
             $targetPath = $uploadDir . $fileName;
-        
+
             if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
                 $attachmentPath = "public/uploads/portfolios/{$userId}/{$fileName}";
                 $data['attachment_path'] = $attachmentPath;
@@ -220,7 +226,7 @@ class PortfolioController {
             'phone' => $phone,
             'address' => $address,
             'linkedin' => $linkedin,
-            'requested_role' => $roleName
+            'requested_role' => $requestedRoleId
         ];
 
         if ($attachmentPath) {
