@@ -254,10 +254,20 @@ async function deleteNotification(id) {
 }
 
 
+
 // Show toast notification
 function showToastNotification(data) {
-  if (shownToasts.has(data.id)) return;
-  shownToasts.add(data.id);
+  // Use a combination of id and timestamp to create unique toast identifier
+  const toastKey = `${data.id}-${Date.now()}`;
+  
+  if (shownToasts.has(toastKey)) return;
+  shownToasts.add(toastKey);
+  
+  // Clean up old entries from shownToasts after 10 seconds
+  setTimeout(() => {
+    shownToasts.delete(toastKey);
+  }, 10000);
+
   const typeColors = {
     add: "#10b981",
     edit: "#3b82f6",

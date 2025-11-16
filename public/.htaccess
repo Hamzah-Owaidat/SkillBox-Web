@@ -1,13 +1,18 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-
+    
     # ✅ Fix: pass Authorization header to PHP
     SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
-
+    
+    # ✅ Handle CV API requests - bypass router entirely
+    # Match any URL that contains /api/cv/
+    RewriteCond %{REQUEST_URI} /api/cv/
+    RewriteRule ^api/cv/(.+)$ cv-serve.php?path=$1 [L,QSA]
+    
     # If file/folder exists, serve it
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-
+    
     # Otherwise, redirect all requests to index.php
     RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>

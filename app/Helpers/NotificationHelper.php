@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Helpers;
 
 use App\Models\Notification;
@@ -6,9 +7,11 @@ use App\Services\PusherService;
 use App\Core\Database;
 use App\Models\Role;
 
-class NotificationHelper {
+class NotificationHelper
+{
 
-    public static function send($senderId, $receiverIds, $title, $message, $type = 'info', $realtime = true, $broadcastPublic = false) {
+    public static function send($senderId, $receiverIds, $title, $message, $type = 'info', $realtime = true, $broadcastPublic = false)
+    {
         if (!is_array($receiverIds)) {
             $receiverIds = [$receiverIds];
         }
@@ -25,21 +28,40 @@ class NotificationHelper {
         if ($realtime && $dbSuccess) {
             try {
                 $pusher = new PusherService();
-                $pusherData = [
-                    'type' => $type,
-                    'title' => $title,
-                    'message' => $message,
-                    'sender_id' => $senderId,
-                    'is_read' => 0,
-                    'created_at' => date('Y-m-d H:i:s')
-                ];
 
-                // Send to individual users
-                $pusher->sendToMultipleUsers($receiverIds, $pusherData);
+                // ✅ Get the created notifications from database to include IDs
+                foreach ($receiverIds as $receiverId) {
+                    // Fetch the most recent notification for this receiver
+                    $notifications = Notification::getByUserId($receiverId, 1, false);
+
+                    if (!empty($notifications)) {
+                        $notification = $notifications[0];
+
+                        // ✅ Send complete notification data with ID and receiver_id
+                        $pusherData = [
+                            'id' => $notification['id'],                    // ✅ Added
+                            'sender_id' => $notification['sender_id'],
+                            'receiver_id' => $notification['receiver_id'],   // ✅ Added
+                            'title' => $notification['title'],
+                            'message' => $notification['message'],
+                            'type' => $notification['type'],
+                            'is_read' => $notification['is_read'],
+                            'created_at' => $notification['created_at']
+                        ];
+
+                        $pusher->sendToUser($receiverId, $pusherData);
+                    }
+                }
 
                 // Optional: broadcast publicly
                 if ($broadcastPublic) {
-                    $pusher->broadcast('notification.received', $pusherData);
+                    $pusher->broadcast('notification.received', [
+                        'type' => $type,
+                        'title' => $title,
+                        'message' => $message,
+                        'sender_id' => $senderId,
+                        'created_at' => date('Y-m-d H:i:s')
+                    ]);
                 }
             } catch (\Exception $e) {
                 error_log("Failed to send real-time notification: " . $e->getMessage());
@@ -50,7 +72,8 @@ class NotificationHelper {
     }
 
 
-    public static function broadcast($senderId, $title, $message, $type = 'announcement', array $userIds = []) {
+    public static function broadcast($senderId, $title, $message, $type = 'announcement', array $userIds = [])
+    {
         if (!empty($userIds)) {
             $notificationData = [
                 'sender_id' => $senderId,
@@ -79,11 +102,13 @@ class NotificationHelper {
         }
     }
 
-    private static function db() {
+    private static function db()
+    {
         return Database::getConnection();
     }
 
-    private static function getUsersByRoleId($roleId) {
+    private static function getUsersByRoleId($roleId)
+    {
         try {
             $sql = "SELECT id FROM users WHERE role_id = :role_id";
             $stmt = self::db()->prepare($sql);
@@ -96,33 +121,36 @@ class NotificationHelper {
         }
     }
 
-    public static function getAllClientIds() {
+    public static function getAllClientIds()
+    {
         // Get the role record for 'client'
         $role = Role::findByName('client');
-    
+
         // If role not found, return empty array
         if (!$role) {
             return [];
         }
-    
+
         // Use the role id dynamically
         return self::getUsersByRoleId($role['id']);
     }
 
-    public static function getAllAdminIds() {
+    public static function getAllAdminIds()
+    {
         // Get the role record for 'admin'
         $role = Role::findByName('admin');
-    
+
         // If role not found, return empty array
         if (!$role) {
             return [];
         }
-    
+
         // Use the role id dynamically
         return self::getUsersByRoleId($role['id']);
     }
 
-    public static function getAllActiveUserIds() {
+    public static function getAllActiveUserIds()
+    {
         try {
             $sql = "SELECT id FROM users WHERE is_active = 1";
             $stmt = self::db()->prepare($sql);
@@ -135,7 +163,8 @@ class NotificationHelper {
         }
     }
 
-    public static function getUserIdsByRole($roleName) {
+    public static function getUserIdsByRole($roleName)
+    {
         try {
             $sql = "SELECT u.id 
                     FROM users u

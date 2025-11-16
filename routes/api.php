@@ -1,8 +1,13 @@
 <?php
+use App\Controllers\Api\FileController;
 use App\Controllers\Api\NotificationApiController;
 use App\Controllers\Api\PusherAuthController;
+use App\Controllers\Api\ServiceApiController;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
+
+// Serve CV files (must be BEFORE other routes that might catch this pattern)
+$router->get('/api/cv/{file}', [FileController::class, 'serveCv']);
 
 $router->post('/api/register', [AuthController::class, 'registerApi']);
 $router->post('/api/login', [AuthController::class, 'loginApi']);
@@ -27,3 +32,8 @@ $router->delete('/api/notifications/{id}', [NotificationApiController::class, 'd
 
 // Send a notification to another user (via Pusher + DB)
 $router->post('/api/notifications/send', [NotificationApiController::class, 'sendNotification']);
+
+
+// Service endpoints (protected)
+$router->get('/api/services', [ServiceApiController::class, 'index']);
+$router->get('/api/services/{id}', [ServiceApiController::class, 'show']);

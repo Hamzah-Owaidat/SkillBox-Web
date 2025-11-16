@@ -1,34 +1,65 @@
 <?php
+
 namespace App\Controllers\Api;
 
 use App\Models\Notification;
 use App\Services\PusherService;
+use App\Helpers\JWTHelper;
 
-class NotificationApiController {
+class NotificationApiController
+{
     protected $userId;
     protected $pusher;
+    protected $isMobileRequest = false;
 
-    public function __construct() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        $this->userId = $_SESSION['user_id'] ?? null;
-        $this->pusher = new PusherService();
-
+    public function __construct()
+    {
         header('Content-Type: application/json');
+
+        // Try JWT authentication first (for mobile)
+        $this->userId = $this->authenticateRequest();
 
         if (!$this->userId) {
             http_response_code(401);
             echo json_encode(['error' => 'Unauthorized']);
             exit;
         }
+
+        $this->pusher = new PusherService();
     }
 
-    public function index() {
+    /**
+     * Authenticate request - supports both JWT (mobile) and Session (web)
+     */
+    private function authenticateRequest()
+    {
+        // Check for JWT token in Authorization header (mobile)
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+
+        if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+            $token = $matches[1];
+            $decoded = JWTHelper::validate($token);
+
+            if ($decoded && isset($decoded['data']->id)) {
+                $this->isMobileRequest = true;
+                return $decoded['data']->id;
+            }
+        }
+
+        // Fallback to session authentication (web)
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        return $_SESSION['user_id'] ?? null;
+    }
+
+    public function index()
+    {
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
         $unreadOnly = isset($_GET['unread_only']) && $_GET['unread_only'] === 'true';
-        
+
         try {
             $notifications = Notification::getByUserId($this->userId, $limit, $unreadOnly);
 
@@ -47,92 +78,155 @@ class NotificationApiController {
         }
     }
 
-    public function unreadCount() {
-        $count = Notification::getUnreadCount($this->userId);
-        echo json_encode(['success' => true, 'count' => $count]);
+    public function unreadCount()
+    {
+        try {
+            $count = Notification::getUnreadCount($this->userId);
+            echo json_encode(['success' => true, 'count' => $count]);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
-    public function markAsRead($id) {
+    public function markAsRead($id)
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
             return;
         }
 
-        $result = Notification::markAsRead($id);
+        try {
+            $result = Notification::markAsRead($id);
 
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Notification marked as read']);
-        } else {
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Notification marked as read']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Failed to mark notification as read']);
+            }
+        } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to mark notification as read']);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
-    public function markAllAsRead() {
+    public function markAllAsRead()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
             return;
         }
 
-        $result = Notification::markAllAsRead($this->userId);
+        try {
+            $result = Notification::markAllAsRead($this->userId);
 
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'All notifications marked as read']);
-        } else {
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'All notifications marked as read']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Failed to mark all notifications as read']);
+            }
+        } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to mark all notifications as read']);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
-    public function delete($id) {
+    public function delete($id)
+    {
         if (!in_array($_SERVER['REQUEST_METHOD'], ['POST', 'DELETE'])) {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
             return;
         }
 
-        $result = Notification::delete($id);
+        try {
+            $result = Notification::delete($id);
 
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Notification deleted']);
-        } else {
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Notification deleted']);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Failed to delete notification']);
+            }
+        } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete notification']);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
-    // Example of sending (triggering) a notification via Pusher
-    public function sendNotification() {
+    public function sendNotification()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
             return;
         }
 
-        $data = json_decode(file_get_contents('php://input'), true);
+        // Get JSON input (works for both mobile and web)
+        $rawInput = file_get_contents('php://input');
+        $data = json_decode($rawInput, true);
 
         if (!isset($data['receiver_id'], $data['title'], $data['message'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Missing required fields']);
+            echo json_encode(['success' => false, 'error' => 'Missing required fields']);
             return;
         }
 
-        $notification = Notification::create([
-            'sender_id' => $this->userId,
-            'receiver_id' => $data['receiver_id'],
-            'title' => $data['title'],
-            'message' => $data['message'],
-            'type' => $data['type'] ?? 'info'
-        ]);
+        try {
+            $notification = Notification::create([
+                'sender_id' => $this->userId,
+                'receiver_id' => $data['receiver_id'],
+                'title' => $data['title'],
+                'message' => $data['message'],
+                'type' => $data['type'] ?? 'info'
+            ]);
 
-        if ($notification) {
-            $this->pusher->trigger('notifications-' . $data['receiver_id'], 'new-notification', $notification);
-            echo json_encode(['success' => true, 'notification' => $notification]);
-        } else {
+            if ($notification) {
+                // ✅ Send complete notification data via Pusher
+                $pusherData = [
+                    'id' => $notification['id'],                      // ✅ Added
+                    'sender_id' => $notification['sender_id'],
+                    'receiver_id' => $notification['receiver_id'],    // ✅ Added
+                    'title' => $notification['title'],
+                    'message' => $notification['message'],
+                    'type' => $notification['type'],
+                    'is_read' => $notification['is_read'],
+                    'created_at' => $notification['created_at']
+                ];
+
+                $this->pusher->sendToUser($data['receiver_id'], $pusherData);
+
+                echo json_encode([
+                    'success' => true,
+                    'notification' => $notification,
+                    'message' => 'Notification sent successfully'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'error' => 'Failed to create notification']);
+            }
+        } catch (\Throwable $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to create notification']);
+            echo json_encode([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }
