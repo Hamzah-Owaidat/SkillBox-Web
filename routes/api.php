@@ -1,4 +1,5 @@
 <?php
+use App\Controllers\Api\ChatApiController;
 use App\Controllers\Api\FileController;
 use App\Controllers\Api\NotificationApiController;
 use App\Controllers\Api\PusherAuthController;
@@ -37,3 +38,11 @@ $router->post('/api/notifications/send', [NotificationApiController::class, 'sen
 // Service endpoints (protected)
 $router->get('/api/services', [ServiceApiController::class, 'index']);
 $router->get('/api/services/{id}', [ServiceApiController::class, 'show']);
+
+// API Chat Routes
+$router->get('/api/chat/conversations', [ChatApiController::class, 'getConversations']);
+$router->post('/api/chat/start', [ChatApiController::class, 'startConversation']);
+$router->get('/api/chat/messages/{id}', [ChatApiController::class, 'getMessages']);
+$router->post('/api/chat/send', [ChatApiController::class, 'sendMessage']);
+$router->post('/api/chat/mark-read/{id}', [ChatApiController::class, 'markAsRead']);
+$router->get('/api/chat/unread-count', [ChatApiController::class, 'getUnreadCount']);

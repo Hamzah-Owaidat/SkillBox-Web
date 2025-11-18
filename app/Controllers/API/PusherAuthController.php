@@ -15,28 +15,39 @@ class PusherAuthController
         // ✅ Get JWT from Authorization header
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+        $jwt = null;
 
-        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Missing or invalid token']);
-            exit;
+        if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            $jwt = $matches[1];
         }
 
-        $jwt = $matches[1];
 
-        // ✅ Decode JWT
-        try {
-            $secretKey = $_ENV['JWT_SECRET'] ?? 'default_secret_key';
-            $decoded = JWT::decode($jwt, new Key($secretKey, 'HS256'));
+        $userId = null;
 
-            $userId = $decoded->data->id ?? null;
-            if (!$userId) {
-                throw new \Exception('Invalid token payload');
+        if ($jwt) {
+            // ✅ Decode JWT for mobile
+            try {
+                $secretKey = $_ENV['JWT_SECRET'] ?? 'default_secret_key';
+                $decoded = \Firebase\JWT\JWT::decode($jwt, new \Firebase\JWT\Key($secretKey, 'HS256'));
+                $userId = $decoded->data->id ?? null;
+                if (!$userId) throw new \Exception('Invalid token payload');
+            } catch (\Exception $e) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Unauthorized', 'message' => $e->getMessage()]);
+                exit;
             }
-        } catch (\Exception $e) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Unauthorized', 'message' => $e->getMessage()]);
-            exit;
+        } else {
+            // ✅ Fallback to web session
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $userId = $_SESSION['user_id'] ?? null;
+
+            if (!$userId) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Unauthorized', 'message' => 'No session found']);
+                exit;
+            }
         }
 
         // ✅ Read POST data - Support both JSON and form data
