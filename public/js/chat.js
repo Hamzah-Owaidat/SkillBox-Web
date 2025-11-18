@@ -4,7 +4,6 @@
     const baseUrl = window.BASE_URL;
     console.log(baseUrl);
 
-
     // Configuration
     const PUSHER_KEY = window.PUSHER_KEY;
     const PUSHER_CLUSTER = window.PUSHER_CLUSTER;
@@ -32,7 +31,6 @@
      * Initialize Pusher for real-time messaging
      */
     function initPusher() {
-
         try {
             // Initialize Pusher
             const pusher = new Pusher(PUSHER_KEY, {
@@ -115,6 +113,7 @@
                 
                 // Clear input
                 messageInput.value = '';
+                messageInput.style.height = 'auto'; // Reset textarea height
                 clearFileSelection();
                 
                 // Scroll to bottom
@@ -190,6 +189,9 @@
         `;
 
         messagesContainer.appendChild(messageDiv);
+        
+        // Scroll to bottom after adding message
+        scrollToBottom();
     }
 
     /**
@@ -250,7 +252,15 @@
      * Scroll to bottom of messages
      */
     function scrollToBottom() {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        if (messagesContainer) {
+            // Use smooth scroll with a slight delay to ensure content is rendered
+            setTimeout(() => {
+                messagesContainer.scrollTo({
+                    top: messagesContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
     }
 
     /**
@@ -287,7 +297,7 @@
      */
     function autoResizeTextarea() {
         messageInput.style.height = 'auto';
-        messageInput.style.height = messageInput.scrollHeight + 'px';
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
     }
 
     /**
@@ -311,12 +321,16 @@
         messageForm.addEventListener('submit', sendMessage);
         fileInput.addEventListener('change', handleFileSelect);
         removeFileBtn.addEventListener('click', clearFileSelection);
-        emojiBtn.addEventListener('click', showEmojiPicker);
+        if (emojiBtn) {
+            emojiBtn.addEventListener('click', function() {
+                console.log('Emoji picker not implemented yet');
+            });
+        }
         messageInput.addEventListener('input', autoResizeTextarea);
         messageInput.addEventListener('keypress', handleKeyPress);
 
-        // Scroll to bottom on load
-        scrollToBottom();
+        // Scroll to bottom on load with delay to ensure DOM is ready
+        setTimeout(scrollToBottom, 300);
 
         // Mark messages as read
         markAsRead();
