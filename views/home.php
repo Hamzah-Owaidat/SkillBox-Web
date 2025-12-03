@@ -68,6 +68,127 @@
   </div>
 </section>
 
+<!-- AI Chatbot Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-robot me-2"></i>
+                            AI Assistant - Find Your Perfect Service
+                        </h5>
+                        <small>Describe what you need, and we'll match you with the best service and worker!</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <textarea id="aiQuestion" 
+                                      class="form-control" 
+                                      rows="3"
+                                      placeholder="Example: I need someone to design social media posts for my business..."></textarea>
+                        </div>
+                        <button id="askAiBtn" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane me-2"></i>
+                            <span id="btnText">Ask AI</span>
+                        </button>
+                        
+                        <div id="aiAnswer" class="mt-4 d-none">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    AI Recommendation
+                                </h6>
+                                <div id="aiReply" class="mb-0" style="white-space: pre-line;"></div>
+                            </div>
+                            
+                            <div id="serviceInfo" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+const baseUrl = <?= json_encode($baseUrl ?? '/skillbox/public') ?>;
+
+document.getElementById('askAiBtn').addEventListener('click', async () => {
+    const input = document.getElementById('aiQuestion');
+    const out = document.getElementById('aiAnswer');
+    const replyDiv = document.getElementById('aiReply');
+    const serviceInfo = document.getElementById('serviceInfo');
+    const btn = document.getElementById('askAiBtn');
+    const btnText = document.getElementById('btnText');
+    const text = input.value.trim();
+    
+    if (!text) {
+        alert('Please describe what you need!');
+        return;
+    }
+
+    // Show loading state
+    btn.disabled = true;
+    btnText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Thinking...';
+    out.classList.remove('d-none');
+    replyDiv.textContent = '🤔 Analyzing your request...';
+    serviceInfo.innerHTML = '';
+
+    try {
+        const res = await fetch(`${baseUrl}/api/chatbot/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        
+        const data = await res.json();
+
+        if (!data.success) {
+            replyDiv.textContent = '❌ ' + (data.error || 'Something went wrong. Please try again.');
+            btn.disabled = false;
+            btnText.textContent = 'Ask AI';
+            return;
+        }
+
+        // Display reply
+        replyDiv.textContent = data.reply;
+
+        // Show service and worker info if available
+        if (data.service && data.worker) {
+            let infoHtml = '<div class="card border-success">';
+            infoHtml += '<div class="card-body">';
+            infoHtml += '<h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Recommended Match</h6>';
+            infoHtml += `<p class="mb-1"><strong>Service:</strong> <a href="${baseUrl}/services/${data.service.id}" target="_blank">${data.service.title}</a></p>`;
+            infoHtml += `<p class="mb-1"><strong>Worker:</strong> ${data.worker.full_name}</p>`;
+            if (data.worker.email) {
+                infoHtml += `<p class="mb-1"><strong>Email:</strong> <a href="mailto:${data.worker.email}">${data.worker.email}</a></p>`;
+            }
+            if (data.worker.phone) {
+                infoHtml += `<p class="mb-0"><strong>Phone:</strong> <a href="tel:${data.worker.phone}">${data.worker.phone}</a></p>`;
+            }
+            infoHtml += '</div></div>';
+            serviceInfo.innerHTML = infoHtml;
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+        replyDiv.textContent = '❌ Network error. Please check your connection and try again.';
+    } finally {
+        btn.disabled = false;
+        btnText.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Ask AI';
+    }
+});
+
+// Allow Enter key to submit (Shift+Enter for new line)
+document.getElementById('aiQuestion').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('askAiBtn').click();
+    }
+});
+</script>
+
 <?php
 $content = ob_get_clean();
 $title = "SkillBox - Home";

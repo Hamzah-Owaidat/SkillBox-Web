@@ -6,6 +6,7 @@ use App\Controllers\Api\PusherAuthController;
 use App\Controllers\Api\ServiceApiController;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
+use App\Controllers\Api\ChatbotController;
 
 // Serve CV files (must be BEFORE other routes that might catch this pattern)
 $router->get('/api/cv/{file}', [FileController::class, 'serveCv']);
@@ -46,3 +47,6 @@ $router->get('/api/chat/messages/{id}', [ChatApiController::class, 'getMessages'
 $router->post('/api/chat/send', [ChatApiController::class, 'sendMessage']);
 $router->post('/api/chat/mark-read/{id}', [ChatApiController::class, 'markAsRead']);
 $router->get('/api/chat/unread-count', [ChatApiController::class, 'getUnreadCount']);
+
+// Api Chatbot
+$router->post('/api/chatbot/query', [ChatbotController::class, 'query']);
