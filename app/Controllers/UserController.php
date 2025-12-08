@@ -68,6 +68,23 @@ class UserController {
             exit;
         }
 
+        // Validate email format
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['toast_message'] = 'Invalid email format';
+            $_SESSION['toast_type'] = 'danger';
+            header('Location: /skillbox/public/profile');
+            exit;
+        }
+
+        // Check if email is already taken by another user
+        $existingUser = User::findByEmail($email);
+        if ($existingUser && $existingUser['id'] != $userId) {
+            $_SESSION['toast_message'] = 'Email is already taken by another user';
+            $_SESSION['toast_type'] = 'danger';
+            header('Location: /skillbox/public/profile');
+            exit;
+        }
+
         $updateData = [
             'full_name' => $full_name,
             'email' => $email,
@@ -103,7 +120,7 @@ class UserController {
             $_SESSION['toast_type'] = 'success';
 
             // Log activity
-            Activity::Log(
+            Activity::log(
                 $userId, 
                 "Updated profile",
                 "User Updated his profile"

@@ -4,6 +4,7 @@ use App\Controllers\Api\FileController;
 use App\Controllers\Api\NotificationApiController;
 use App\Controllers\Api\PusherAuthController;
 use App\Controllers\Api\ServiceApiController;
+use App\Controllers\Api\UserApiController;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
 use App\Controllers\Api\ChatbotController;
@@ -14,6 +15,10 @@ $router->get('/api/cv/{file}', [FileController::class, 'serveCv']);
 $router->post('/api/register', [AuthController::class, 'registerApi']);
 $router->post('/api/login', [AuthController::class, 'loginApi']);
 $router->get('/api/me', [UserController::class, 'me']); // protect in controller with AuthMiddleware::api()
+
+// User Profile API (mobile)
+$router->put('/api/profile', [UserApiController::class, 'updateProfile']);
+$router->patch('/api/profile', [UserApiController::class, 'updateProfile']); // Alternative method
 
 $router->post('/pusher/auth', [PusherAuthController::class, 'authenticate']);
 
