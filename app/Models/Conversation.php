@@ -59,6 +59,7 @@ class Conversation {
         $stmt = $db->prepare("
             SELECT 
                 c.*,
+                COALESCE(c.last_message_snippet, 'No messages yet') as last_message_snippet,
                 CASE 
                     WHEN c.user1_id = :user_id THEN u2.full_name
                     ELSE u1.full_name
