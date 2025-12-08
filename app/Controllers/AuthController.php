@@ -213,7 +213,9 @@ class AuthController {
         if (!empty($errors)) {
             $_SESSION['login_errors'] = $errors;
             $_SESSION['old_email'] = $email;
-            header("Location: {$this->baseUrl}/login");
+            $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
+            $redirectParam = !empty($redirect) ? '?redirect=' . urlencode($redirect) : '';
+            header("Location: {$this->baseUrl}/login{$redirectParam}");
             exit;
         }
 
@@ -223,7 +225,9 @@ class AuthController {
             $_SESSION['toast_message'] = 'Invalid credentials';
             $_SESSION['toast_type'] = 'danger';
             $_SESSION['old_email'] = $email;
-            header("Location: {$this->baseUrl}/login");
+            $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
+            $redirectParam = !empty($redirect) ? '?redirect=' . urlencode($redirect) : '';
+            header("Location: {$this->baseUrl}/login{$redirectParam}");
             exit;
         }
 
@@ -232,7 +236,9 @@ class AuthController {
             $_SESSION['toast_message'] = 'Your account has been banned. Please contact support.';
             $_SESSION['toast_type'] = 'danger';
             $_SESSION['old_email'] = $email;
-            header("Location: {$this->baseUrl}/login");
+            $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? '';
+            $redirectParam = !empty($redirect) ? '?redirect=' . urlencode($redirect) : '';
+            header("Location: {$this->baseUrl}/login{$redirectParam}");
             exit;
         }
 
@@ -246,6 +252,18 @@ class AuthController {
 
         $_SESSION['toast_message'] = 'Welcome back, ' . $user['full_name'] . '!';
         $_SESSION['toast_type'] = 'success';
+
+        // Handle redirect after login
+        $redirect = $_GET['redirect'] ?? $_POST['redirect'] ?? null;
+        if ($redirect) {
+            // Sanitize and validate redirect URL
+            $redirect = urldecode($redirect);
+            // Only allow internal redirects (must start with baseUrl)
+            if (strpos($redirect, $this->baseUrl) === 0 || strpos($redirect, '/') === 0) {
+                header("Location: {$redirect}");
+                exit;
+            }
+        }
 
         header("Location: {$this->baseUrl}/");
         exit;

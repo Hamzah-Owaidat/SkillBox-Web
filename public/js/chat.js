@@ -142,9 +142,18 @@
             return;
         }
 
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message-wrapper ${isMine ? 'text-end' : 'text-start'} mb-3`;
-        messageDiv.setAttribute('data-message-id', message.id);
+        // Find or create messages list
+        let messagesList = messagesContainer.querySelector('.messages-list');
+        if (!messagesList) {
+            messagesList = document.createElement('div');
+            messagesList.className = 'messages-list';
+            messagesContainer.innerHTML = '';
+            messagesContainer.appendChild(messagesList);
+        }
+
+        const messageItem = document.createElement('div');
+        messageItem.className = `message-item ${isMine ? 'message-sent' : 'message-received'}`;
+        messageItem.setAttribute('data-message-id', message.id);
 
         let attachmentHtml = '';
         if (message.attachment_path) {
@@ -153,42 +162,52 @@
             
             if (isImage) {
                 attachmentHtml = `
-                    <img src="${baseUrl}/${message.attachment_path}" 
-                         class="img-fluid rounded mb-2" 
-                         style="max-width: 300px; cursor: pointer;"
-                         onclick="window.open(this.src, '_blank')">
+                    <div class="message-image">
+                        <img src="${baseUrl}/${message.attachment_path}" 
+                             alt="Attachment"
+                             onclick="window.open(this.src, '_blank')">
+                    </div>
                 `;
             } else {
                 attachmentHtml = `
-                    <a href="${baseUrl}/${message.attachment_path}" 
-                       target="_blank" 
-                       class="text-decoration-none ${isMine ? 'text-white' : 'text-primary'}">
-                        <i class="fas fa-file"></i> 
-                        ${message.attachment_path.split('/').pop()}
-                    </a>
+                    <div class="message-file">
+                        <i class="fas fa-file-alt"></i>
+                        <a href="${baseUrl}/${message.attachment_path}" 
+                           target="_blank" 
+                           class="file-link">
+                            ${message.attachment_path.split('/').pop()}
+                        </a>
+                    </div>
                 `;
             }
         }
 
-        const textHtml = message.text ? `<div>${escapeHtml(message.text).replace(/\n/g, '<br>')}</div>` : '';
+        const textHtml = message.text ? `<div class="message-text">${escapeHtml(message.text).replace(/\n/g, '<br>')}</div>` : '';
 
-        messageDiv.innerHTML = `
-            <div class="d-inline-block" style="max-width: 70%;">
-                ${!isMine ? `<small class="text-muted">${escapeHtml(message.sender_name)}</small>` : ''}
-                
-                <div class="message-bubble p-3 rounded ${isMine ? 'bg-primary text-white' : 'bg-light'}">
+        messageItem.innerHTML = `
+            ${!isMine ? `
+                <div class="message-avatar">
+                    ${escapeHtml(message.sender_name).charAt(0).toUpperCase()}
+                </div>
+            ` : ''}
+            <div class="message-content">
+                ${!isMine ? `<div class="message-sender-name">${escapeHtml(message.sender_name)}</div>` : ''}
+                <div class="message-bubble-modern ${isMine ? 'bubble-sent' : 'bubble-received'}">
                     ${attachmentHtml}
                     ${textHtml}
                 </div>
-                
-                <small class="text-muted d-block mt-1">
-                    ${formatTime(message.send_at)}
-                    ${isMine && message.is_readed ? '<i class="fas fa-check-double text-primary"></i>' : ''}
-                </small>
+                <div class="message-meta">
+                    <span class="message-time">${formatTime(message.send_at)}</span>
+                    ${isMine ? `
+                        <span class="message-status">
+                            ${message.is_readed ? '<i class="fas fa-check-double read"></i>' : '<i class="fas fa-check sent"></i>'}
+                        </span>
+                    ` : ''}
+                </div>
             </div>
         `;
 
-        messagesContainer.appendChild(messageDiv);
+        messagesList.appendChild(messageItem);
         
         // Scroll to bottom after adding message
         scrollToBottom();

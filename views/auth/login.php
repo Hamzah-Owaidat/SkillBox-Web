@@ -20,7 +20,13 @@ unset($_SESSION['login_errors'], $_SESSION['old_email']);
           <h3 class="fw-bold mt-2" style="color:#1F3440;">Login</h3>
           <p class="text-muted mb-0">Welcome back! Please login to your account.</p>
         </div>
-        <form id="loginForm" method="POST" action="<?= $baseUrl ?>/login">
+        <?php 
+        $redirect = $_GET['redirect'] ?? '';
+        ?>
+        <form id="loginForm" method="POST" action="<?= $baseUrl ?>/login<?= !empty($redirect) ? '?redirect=' . urlencode($redirect) : '' ?>">
+          <?php if (!empty($redirect)): ?>
+            <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>">
+          <?php endif; ?>
           <div class="mb-3">
             <label for="loginEmail" class="form-label" style="color:#2C6566;">Email address</label>
             <input type="text" class="form-control rounded-pill <?= !empty($errors['email']) ? 'is-invalid' : '' ?>" 

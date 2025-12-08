@@ -1,117 +1,156 @@
 <?php 
 $baseUrl ??= '/skillbox/public'; 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 $currentUserId = $_SESSION['user_id'] ?? null;
 ?>
 
-<div class="container-fluid py-4" style="height: calc(100vh - 120px);">
-    <div class="row h-100">
-        <div class="col-12">
-            <div class="card h-100 shadow">
-                <!-- Chat Header -->
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <a href="<?= $baseUrl ?>/chat" class="btn btn-sm btn-light me-3">
-                            <i class="fas fa-arrow-left"></i>
-                        </a>
-                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center me-3" 
-                             style="width: 40px; height: 40px;">
-                            <?= strtoupper(substr($otherUser['full_name'], 0, 1)) ?>
-                        </div>
-                        <div>
-                            <h5 class="mb-0"><?= htmlspecialchars($otherUser['full_name']) ?></h5>
-                            <small><?= htmlspecialchars($otherUser['email']) ?></small>
-                        </div>
-                    </div>
+<div class="chat-conversation-container">
+    <div class="chat-wrapper">
+        <!-- Modern Chat Header -->
+        <div class="chat-header">
+            <a href="<?= $baseUrl ?>/chat" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="chat-user-info">
+                <div class="chat-avatar">
+                    <?= strtoupper(substr($otherUser['full_name'], 0, 1)) ?>
                 </div>
+                <div class="chat-user-details">
+                    <h5 class="chat-user-name"><?= htmlspecialchars($otherUser['full_name']) ?></h5>
+                    <span class="chat-user-status">Online</span>
+                </div>
+            </div>
+            <div class="chat-header-actions">
+                <button class="header-action-btn" title="More options">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
+        </div>
 
-                <!-- Messages Container -->
-                <div class="card-body overflow-auto" id="messagesContainer" style="flex: 1; max-height: calc(100vh - 300px);">
-                    <?php if (empty($messages)): ?>
-                        <div class="text-center text-muted py-5">
-                            <i class="fas fa-comments fa-3x mb-3"></i>
-                            <p>No messages yet. Start the conversation!</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($messages as $msg): ?>
-                            <?php $isMine = $msg['sender_id'] == $currentUserId; ?>
-                            <div class="message-wrapper <?= $isMine ? 'text-end' : 'text-start' ?> mb-3" data-message-id="<?= $msg['id'] ?>">
-                                <div class="d-inline-block" style="max-width: 70%;">
-                                    <?php if (!$isMine): ?>
-                                        <small class="text-muted"><?= htmlspecialchars($msg['sender_name']) ?></small>
-                                    <?php endif; ?>
-                                    
-                                    <div class="message-bubble p-3 rounded <?= $isMine ? 'bg-primary text-white' : 'bg-light' ?>">
-                                        <?php if (!empty($msg['attachment_path'])): ?>
-                                            <?php
-                                            $extension = strtolower(pathinfo($msg['attachment_path'], PATHINFO_EXTENSION));
-                                            $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                                            ?>
-                                            
-                                            <?php if ($isImage): ?>
+        <!-- Messages Container -->
+        <div class="chat-messages" id="messagesContainer">
+            <?php if (empty($messages)): ?>
+                <div class="empty-messages">
+                    <div class="empty-messages-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h4>No messages yet</h4>
+                    <p>Start the conversation by sending a message below!</p>
+                </div>
+            <?php else: ?>
+                <div class="messages-list">
+                    <?php 
+                    $prevDate = '';
+                    foreach ($messages as $msg): 
+                        $isMine = $msg['sender_id'] == $currentUserId;
+                        $msgDate = date('Y-m-d', strtotime($msg['send_at']));
+                        $showDate = $msgDate !== $prevDate;
+                        $prevDate = $msgDate;
+                    ?>
+                        <?php if ($showDate): ?>
+                            <div class="message-date-divider">
+                                <span><?= date('F j, Y', strtotime($msg['send_at'])) ?></span>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="message-item <?= $isMine ? 'message-sent' : 'message-received' ?>" data-message-id="<?= $msg['id'] ?>">
+                            <?php if (!$isMine): ?>
+                                <div class="message-avatar">
+                                    <?= strtoupper(substr($msg['sender_name'], 0, 1)) ?>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <div class="message-content">
+                                <?php if (!$isMine): ?>
+                                    <div class="message-sender-name"><?= htmlspecialchars($msg['sender_name']) ?></div>
+                                <?php endif; ?>
+                                
+                                <div class="message-bubble-modern <?= $isMine ? 'bubble-sent' : 'bubble-received' ?>">
+                                    <?php if (!empty($msg['attachment_path'])): ?>
+                                        <?php
+                                        $extension = strtolower(pathinfo($msg['attachment_path'], PATHINFO_EXTENSION));
+                                        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                                        ?>
+                                        
+                                        <?php if ($isImage): ?>
+                                            <div class="message-image">
                                                 <img src="<?= $baseUrl ?>/<?= $msg['attachment_path'] ?>" 
-                                                     class="img-fluid rounded mb-2" 
-                                                     style="max-width: 300px; cursor: pointer;"
+                                                     alt="Attachment"
                                                      onclick="window.open(this.src, '_blank')">
-                                            <?php else: ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="message-file">
+                                                <i class="fas fa-file-alt"></i>
                                                 <a href="<?= $baseUrl ?>/<?= $msg['attachment_path'] ?>" 
                                                    target="_blank" 
-                                                   class="text-decoration-none <?= $isMine ? 'text-white' : 'text-primary' ?>">
-                                                    <i class="fas fa-file"></i> 
+                                                   class="file-link">
                                                     <?= basename($msg['attachment_path']) ?>
                                                 </a>
-                                            <?php endif; ?>
+                                            </div>
                                         <?php endif; ?>
-                                        
-                                        <?php if (!empty($msg['text'])): ?>
-                                            <div><?= nl2br(htmlspecialchars($msg['text'])) ?></div>
-                                        <?php endif; ?>
-                                    </div>
+                                    <?php endif; ?>
                                     
-                                    <small class="text-muted d-block mt-1">
-                                        <?= date('g:i A', strtotime($msg['send_at'])) ?>
-                                        <?php if ($isMine && $msg['is_readed']): ?>
-                                            <i class="fas fa-check-double text-primary"></i>
-                                        <?php endif; ?>
-                                    </small>
+                                    <?php if (!empty($msg['text'])): ?>
+                                        <div class="message-text"><?= nl2br(htmlspecialchars($msg['text'])) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <div class="message-meta">
+                                    <span class="message-time"><?= date('g:i A', strtotime($msg['send_at'])) ?></span>
+                                    <?php if ($isMine): ?>
+                                        <span class="message-status">
+                                            <?php if ($msg['is_readed']): ?>
+                                                <i class="fas fa-check-double read"></i>
+                                            <?php else: ?>
+                                                <i class="fas fa-check sent"></i>
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Message Input -->
-                <div class="card-footer bg-light">
-                    <form id="messageForm" class="d-flex align-items-center gap-2" enctype="multipart/form-data">
-                        <input type="hidden" name="conversation_id" value="<?= $conversation['id'] ?>">
-
-                        <!-- File Upload Button -->
-                        <label for="fileInput" class="btn btn-outline-secondary mb-0" title="Attach file">
-                            <i class="fas fa-paperclip"></i>
-                            <input type="file" id="fileInput" name="attachment" class="d-none" 
-                                   accept="image/*,.pdf,.doc,.docx">
-                        </label>
-                        
-                        <!-- Message Input -->
-                        <textarea class="form-control" 
-                                  id="messageInput" 
-                                  name="message" 
-                                  rows="1" 
-                                  placeholder="Type a message..."
-                                  style="resize: none;"></textarea>
-                        
-                        <!-- Send Button -->
-                        <button type="submit" class="btn btn-primary" id="sendBtn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
-                    
-                    <!-- File Preview -->
-                    <div id="filePreview" class="mt-2 d-none">
-                        <div class="alert alert-info d-flex justify-content-between align-items-center mb-0">
-                            <span><i class="fas fa-file"></i> <span id="fileName"></span></span>
-                            <button type="button" class="btn btn-sm btn-close" id="removeFile"></button>
                         </div>
-                    </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Message Input -->
+        <div class="chat-input-container">
+            <form id="messageForm" class="chat-input-form" enctype="multipart/form-data">
+                <input type="hidden" name="conversation_id" value="<?= $conversation['id'] ?>">
+
+                <!-- File Upload Button -->
+                <label for="fileInput" class="attach-button" title="Attach file">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" id="fileInput" name="attachment" class="d-none" 
+                           accept="image/*,.pdf,.doc,.docx">
+                </label>
+                
+                <!-- Message Input -->
+                <div class="input-wrapper">
+                    <textarea class="message-input" 
+                              id="messageInput" 
+                              name="message" 
+                              rows="1" 
+                              placeholder="Type a message..."></textarea>
+                </div>
+                
+                <!-- Send Button -->
+                <button type="submit" class="send-button" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+            
+            <!-- File Preview -->
+            <div id="filePreview" class="file-preview d-none">
+                <div class="file-preview-content">
+                    <i class="fas fa-file"></i>
+                    <span id="fileName"></span>
+                    <button type="button" class="remove-file-btn" id="removeFile">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -126,46 +165,6 @@ $currentUserId = $_SESSION['user_id'] ?? null;
     window.BASE_URL = <?= json_encode($baseUrl) ?>;
     window.PUSHER_KEY = <?= json_encode($_ENV['PUSHER_APP_KEY']) ?>;
     window.PUSHER_CLUSTER = <?= json_encode($_ENV['PUSHER_APP_CLUSTER']) ?>;
-
 </script>
 
 <script src="<?= $baseUrl ?>/js/chat.js"></script>
-
-<style>
-#messagesContainer {
-    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
-}
-
-.message-wrapper {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.message-bubble {
-    word-wrap: break-word;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.message-bubble img {
-    border: 2px solid rgba(255,255,255,0.2);
-}
-
-#messageInput:focus {
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-
-.btn-outline-secondary:hover {
-    transform: scale(1.1);
-    transition: transform 0.2s;
-}
-</style>
