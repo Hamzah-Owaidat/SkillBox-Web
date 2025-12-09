@@ -1,13 +1,14 @@
 <?php
 use App\Controllers\Api\ChatApiController;
+use App\Controllers\Api\ChatbotController;
 use App\Controllers\Api\FileController;
+use App\Controllers\Api\ForgotPasswordController;
 use App\Controllers\Api\NotificationApiController;
 use App\Controllers\Api\PusherAuthController;
 use App\Controllers\Api\ServiceApiController;
 use App\Controllers\Api\UserApiController;
 use App\Controllers\AuthController;
 use App\Controllers\UserController;
-use App\Controllers\Api\ChatbotController;
 
 // Serve CV files (must be BEFORE other routes that might catch this pattern)
 $router->get('/api/cv/{file}', [FileController::class, 'serveCv']);
@@ -55,3 +56,8 @@ $router->get('/api/chat/unread-count', [ChatApiController::class, 'getUnreadCoun
 
 // Api Chatbot
 $router->post('/api/chatbot/query', [ChatbotController::class, 'query']);
+
+// Forgot Password API
+$router->post('/api/forgot-password', [ForgotPasswordController::class, 'sendResetCode']);
+$router->post('/api/verify-reset-code', [ForgotPasswordController::class, 'verifyResetCode']);
+$router->post('/api/reset-password', [ForgotPasswordController::class, 'resetPassword']);

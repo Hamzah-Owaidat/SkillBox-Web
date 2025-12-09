@@ -47,8 +47,13 @@ unset($_SESSION['login_errors'], $_SESSION['old_email']);
 
           <button type="submit" class="btn w-100 rounded-pill fw-bold" style="background-color:#25BDB0; color:#fff;">Login</button>
         </form>
+        <div class="text-center mt-3">
+          <a href="<?= $baseUrl ?>/forgot-password" class="fw-bold" style="color:#25BDB0; text-decoration: none;">
+            <i class="bi bi-question-circle me-1"></i>Forgot Password?
+          </a>
+        </div>
         <div class="text-center mt-4">
-          <span class="text-muted">Don’t have an account?</span>
+          <span class="text-muted">Don't have an account?</span>
           <a href="<?= $baseUrl ?>/register" class="fw-bold ms-1" style="color:#EDBF43;">Register</a>
         </div>
       </div>

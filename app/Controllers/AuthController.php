@@ -283,4 +283,208 @@ class AuthController {
     public function showRegisterForm() {
         require __DIR__ . '/../../views/auth/register.php';
     }
+
+    // Forgot Password - Show form
+    public function showForgotPasswordForm() {
+        require __DIR__ . '/../../views/auth/forgot-password.php';
+    }
+
+    // Forgot Password - Send code
+    public function sendResetCode() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $email = $_POST['email'] ?? '';
+        $errors = [];
+
+        if (empty($email)) {
+            $errors['email'] = 'Email is required';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Please enter a valid email';
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['forgot_password_errors'] = $errors;
+            $_SESSION['old_email'] = $email;
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+
+        $user = User::findByEmail($email);
+        
+        // Always show success message (security: don't reveal if email exists)
+        if (!$user) {
+            $_SESSION['toast_message'] = 'If an account exists with this email, a reset code has been sent.';
+            $_SESSION['toast_type'] = 'success';
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+
+        // Generate 6-digit code
+        $code = str_pad((string)rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Save code to database
+        \App\Models\PasswordReset::createOrUpdate($user['id'], $code);
+
+        // Send email
+        $mailService = new \App\Services\MailService();
+        $result = $mailService->sendPasswordResetCode($user['email'], $user['full_name'], $code);
+
+        if ($result['success']) {
+            // Store user_id in session for verification step
+            $_SESSION['reset_user_id'] = $user['id'];
+            $_SESSION['toast_message'] = 'Reset code has been sent to your email!';
+            $_SESSION['toast_type'] = 'success';
+            header("Location: {$this->baseUrl}/verify-reset-code");
+        } else {
+            // Log the actual error for debugging
+            $errorMsg = $result['error'] ?? 'Unknown error';
+            error_log("[Forgot Password] Email send failed: " . $errorMsg);
+            
+            // Show detailed error in development, generic in production
+            $displayError = $_ENV['APP_DEBUG'] ?? false 
+                ? 'Failed to send email: ' . htmlspecialchars($errorMsg)
+                : 'Failed to send email. Please try again later.';
+            
+            $_SESSION['toast_message'] = $displayError;
+            $_SESSION['toast_type'] = 'danger';
+            header("Location: {$this->baseUrl}/forgot-password");
+        }
+        exit;
+    }
+
+    // Verify Reset Code - Show form
+    public function showVerifyCodeForm() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        
+        if (empty($_SESSION['reset_user_id'])) {
+            $_SESSION['toast_message'] = 'Please request a reset code first.';
+            $_SESSION['toast_type'] = 'warning';
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+        
+        require __DIR__ . '/../../views/auth/verify-reset-code.php';
+    }
+
+    // Verify Reset Code - Process
+    public function verifyResetCode() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $code = $_POST['code'] ?? '';
+        $userId = $_SESSION['reset_user_id'] ?? null;
+
+        $errors = [];
+
+        if (empty($code)) {
+            $errors['code'] = 'Code is required';
+        } elseif (!preg_match('/^\d{6}$/', $code)) {
+            $errors['code'] = 'Code must be 6 digits';
+        }
+
+        if (empty($userId)) {
+            $_SESSION['toast_message'] = 'Session expired. Please request a new code.';
+            $_SESSION['toast_type'] = 'warning';
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['verify_code_errors'] = $errors;
+            header("Location: {$this->baseUrl}/verify-reset-code");
+            exit;
+        }
+
+        // Verify code
+        $reset = \App\Models\PasswordReset::verifyCode($userId, $code);
+
+        if (!$reset) {
+            \App\Models\PasswordReset::incrementAttempts($userId, $code);
+            $_SESSION['verify_code_errors'] = ['code' => 'Invalid or expired code. Please try again.'];
+            header("Location: {$this->baseUrl}/verify-reset-code");
+            exit;
+        }
+
+        // Code verified - store in session for password reset
+        $_SESSION['verified_reset_code'] = $code;
+        $_SESSION['toast_message'] = 'Code verified! Please set your new password.';
+        $_SESSION['toast_type'] = 'success';
+        header("Location: {$this->baseUrl}/reset-password");
+        exit;
+    }
+
+    // Reset Password - Show form
+    public function showResetPasswordForm() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        
+        if (empty($_SESSION['reset_user_id']) || empty($_SESSION['verified_reset_code'])) {
+            $_SESSION['toast_message'] = 'Please verify your code first.';
+            $_SESSION['toast_type'] = 'warning';
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+        
+        require __DIR__ . '/../../views/auth/reset-password.php';
+    }
+
+    // Reset Password - Process
+    public function resetPassword() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        $userId = $_SESSION['reset_user_id'] ?? null;
+        $code = $_SESSION['verified_reset_code'] ?? null;
+
+        $errors = [];
+
+        if (empty($userId) || empty($code)) {
+            $_SESSION['toast_message'] = 'Session expired. Please start over.';
+            $_SESSION['toast_type'] = 'warning';
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+
+        if (empty($password)) {
+            $errors['password'] = 'Password is required';
+        } elseif (!preg_match('/^(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}$/', $password)) {
+            $errors['password'] = 'Password must have 1 uppercase, 1 special char, and be at least 8 chars';
+        }
+
+        if (empty($confirmPassword)) {
+            $errors['confirm_password'] = 'Please confirm your password';
+        } elseif ($password !== $confirmPassword) {
+            $errors['confirm_password'] = 'Passwords do not match';
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['reset_password_errors'] = $errors;
+            header("Location: {$this->baseUrl}/reset-password");
+            exit;
+        }
+
+        // Verify code one more time
+        $reset = \App\Models\PasswordReset::verifyCode($userId, $code);
+        if (!$reset) {
+            $_SESSION['toast_message'] = 'Code expired. Please request a new one.';
+            $_SESSION['toast_type'] = 'warning';
+            unset($_SESSION['reset_user_id'], $_SESSION['verified_reset_code']);
+            header("Location: {$this->baseUrl}/forgot-password");
+            exit;
+        }
+
+        // Update password
+        $hashed = password_hash($password, PASSWORD_BCRYPT);
+        User::update($userId, ['password' => $hashed]);
+
+        // Delete used code
+        \App\Models\PasswordReset::deleteCode($userId, $code);
+
+        // Clear session
+        unset($_SESSION['reset_user_id'], $_SESSION['verified_reset_code']);
+
+        $_SESSION['toast_message'] = 'Password reset successfully! Please login with your new password.';
+        $_SESSION['toast_type'] = 'success';
+        header("Location: {$this->baseUrl}/login");
+        exit;
+    }
 }

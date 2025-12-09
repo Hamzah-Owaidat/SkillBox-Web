@@ -19,6 +19,14 @@ $router->post('/register', [AuthController::class, 'register']);
 $router->post('/login', [AuthController::class, 'loginWeb']);
 $router->get('/logout', [AuthController::class, 'logoutWeb']);
 
+// Forgot Password
+$router->get('/forgot-password', [AuthController::class, 'showForgotPasswordForm']);
+$router->post('/forgot-password/send', [AuthController::class, 'sendResetCode']);
+$router->get('/verify-reset-code', [AuthController::class, 'showVerifyCodeForm']);
+$router->post('/verify-reset-code', [AuthController::class, 'verifyResetCode']);
+$router->get('/reset-password', [AuthController::class, 'showResetPasswordForm']);
+$router->post('/reset-password', [AuthController::class, 'resetPassword']);
+
 
 // Home
 $router->get('/', [HomeController::class, 'index']);
