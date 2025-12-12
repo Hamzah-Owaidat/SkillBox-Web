@@ -6,6 +6,8 @@ use App\Models\Portfolio;
 use App\Models\Role;
 use App\Helpers\NotificationHelper;
 use App\Models\Activity;
+use App\Core\AuthMiddleware;
+use App\Core\RoleMiddleware;
 
 class PortfoliosController
 {
@@ -22,6 +24,8 @@ class PortfoliosController
 
     public function index()
     {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
 
@@ -45,6 +49,9 @@ class PortfoliosController
     // Export to Excel
     public function export()
     {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $portfolios = Portfolio::getAll();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -123,6 +130,9 @@ class PortfoliosController
 
     public function accept($id)
     {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $portfolio = Portfolio::find($id);
         if (!$portfolio) {
             $_SESSION['toast_message'] = 'Portfolio not found.';
@@ -177,6 +187,9 @@ class PortfoliosController
     // Reject portfolio
     public function reject($id)
     {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $portfolio = Portfolio::find($id);
 
         if (!$portfolio) {
@@ -221,6 +234,9 @@ class PortfoliosController
     // Delete portfolio
     public function delete($id)
     {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         // Get portfolio to delete file
         $portfolio = Portfolio::find($id);
 

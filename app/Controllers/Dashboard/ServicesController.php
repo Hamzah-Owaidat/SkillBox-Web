@@ -6,6 +6,8 @@ require_once __DIR__ . '/../../Helpers/helpers.php';
 use App\Models\Service;
 use App\Helpers\NotificationHelper;
 use App\Models\Activity;
+use App\Core\AuthMiddleware;
+use App\Core\RoleMiddleware;
 
 class ServicesController {
     protected $baseUrl = '/skillbox/public';
@@ -22,6 +24,8 @@ class ServicesController {
      * Display all services with pagination, search, and filters
      */
     public function index() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
         
@@ -43,6 +47,9 @@ class ServicesController {
      * Create new service
      */
     public function store() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: {$this->baseUrl}/dashboard/services");
             exit;
@@ -99,6 +106,9 @@ class ServicesController {
      * Update existing service
      */
     public function update($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: {$this->baseUrl}/dashboard/services");
             exit;
@@ -155,6 +165,9 @@ class ServicesController {
      * Delete service
      */
     public function delete($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         // Get service details before deletion for notification
         $service = Service::findById($id);
         $serviceTitle = $service['title'] ?? 'Unknown Service';
@@ -187,6 +200,9 @@ class ServicesController {
      * Export all services to Excel
      */
     public function export() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $services = Service::getAll();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

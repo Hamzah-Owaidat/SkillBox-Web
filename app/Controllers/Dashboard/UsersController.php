@@ -4,11 +4,15 @@ namespace App\Controllers\Dashboard;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Activity;
+use App\Core\AuthMiddleware;
+use App\Core\RoleMiddleware;
 
 class UsersController {
     protected $baseUrl = '/skillbox/public';
 
     public function index() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 5;
         
@@ -28,6 +32,9 @@ class UsersController {
 
     // ✅ Create new user
     public function store() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
@@ -99,6 +106,9 @@ class UsersController {
 
     // ✅ Update user
     public function update($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: {$this->baseUrl}/dashboard/users");
             exit;
@@ -139,6 +149,9 @@ class UsersController {
 
     // ✅ Toggle user status
     public function toggleStatus($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $id) {
             $_SESSION['toast_message'] = 'You cannot deactivate your own account.';
             $_SESSION['toast_type'] = 'danger';
@@ -166,6 +179,9 @@ class UsersController {
 
     // ✅ Delete user
     public function delete($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $id) {
             $_SESSION['toast_message'] = 'You cannot delete your own account.';
             $_SESSION['toast_type'] = 'danger';
@@ -194,6 +210,9 @@ class UsersController {
 
     // ✅ Export users
     public function export() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $users = User::getAll();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

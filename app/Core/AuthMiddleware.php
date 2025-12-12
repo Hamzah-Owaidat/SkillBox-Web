@@ -40,8 +40,9 @@ class AuthMiddleware {
     public static function web() {
         if (session_status() === PHP_SESSION_NONE) session_start();
         if (empty($_SESSION['user_id'])) {
-            // redirect to login or show error
-            header('Location: /login');
+            // redirect to login with proper base URL
+            $baseUrl = '/skillbox/public';
+            header("Location: {$baseUrl}/login");
             exit;
         }
         $GLOBALS['auth_user'] = User::find($_SESSION['user_id']);

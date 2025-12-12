@@ -3,12 +3,16 @@ namespace App\Controllers\Dashboard;
 
 use App\Models\Role;
 use App\Models\Activity;
+use App\Core\AuthMiddleware;
+use App\Core\RoleMiddleware;
 use PDO;
 
 class RoleController {
     protected $baseUrl = '/skillbox/public';
 
     public function index() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = 10; // rows per page
 
@@ -21,6 +25,9 @@ class RoleController {
     }
 
     public function store() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: {$this->baseUrl}/dashboard/roles");
             exit;
@@ -62,6 +69,9 @@ class RoleController {
     }
 
     public function update($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: {$this->baseUrl}/dashboard/roles");
             exit;
@@ -112,6 +122,9 @@ class RoleController {
     }
 
     public function delete($id) {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         // 1️⃣ Fetch role info
         $role = Role::find($id);
 
@@ -162,6 +175,9 @@ class RoleController {
 
 
     public function export() {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $roles = Role::getAll();
 
         // ✅ Load PhpSpreadsheet classes

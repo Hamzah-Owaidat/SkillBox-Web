@@ -1,5 +1,9 @@
-<?php ob_start(); ?>
-<?php $baseUrl = '/skillbox/public'; ?>
+<?php 
+ob_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
+$baseUrl = '/skillbox/public';
+$isLoggedIn = isset($_SESSION['user_id']);
+?>
 
 <!-- Hero Section -->
 <section class="hero-section" style="background: url('<?= $baseUrl ?>/images/background.jpg') center/cover no-repeat; height:100vh; position:relative; display:flex; align-items:center; justify-content:center; text-align:center;">
@@ -82,28 +86,47 @@
                         <small>Describe what you need, and we'll match you with the best service and worker!</small>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <textarea id="aiQuestion" 
-                                      class="form-control" 
-                                      rows="3"
-                                      placeholder="Example: I need someone to design social media posts for my business..."></textarea>
-                        </div>
-                        <button id="askAiBtn" class="btn btn-primary w-100">
-                            <i class="fas fa-paper-plane me-2"></i>
-                            <span id="btnText">Ask AI</span>
-                        </button>
-                        
-                        <div id="aiAnswer" class="mt-4 d-none">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading">
-                                    <i class="fas fa-lightbulb me-2"></i>
-                                    AI Recommendation
-                                </h6>
-                                <div id="aiReply" class="mb-0" style="white-space: pre-line;"></div>
+                        <?php if (!$isLoggedIn): ?>
+                            <!-- Guest User - Login Required -->
+                            <div class="text-center py-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                                </div>
+                                <h5 class="text-muted mb-3">Login Required</h5>
+                                <p class="text-muted mb-4">Please log in to use the AI Assistant and get personalized service recommendations.</p>
+                                <a href="<?= $baseUrl ?>/login" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    Login to Continue
+                                </a>
+                                <p class="mt-3 mb-0">
+                                    <small class="text-muted">Don't have an account? <a href="<?= $baseUrl ?>/register" class="text-primary">Sign up here</a></small>
+                                </p>
                             </div>
+                        <?php else: ?>
+                            <!-- Logged In User - Active Chatbot -->
+                            <div class="mb-3">
+                                <textarea id="aiQuestion" 
+                                          class="form-control" 
+                                          rows="3"
+                                          placeholder="Example: I need someone to design social media posts for my business..."></textarea>
+                            </div>
+                            <button id="askAiBtn" class="btn btn-primary w-100">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                <span id="btnText">Ask AI</span>
+                            </button>
                             
-                            <div id="serviceInfo" class="mt-3"></div>
-                        </div>
+                            <div id="aiAnswer" class="mt-4 d-none">
+                                <div class="alert alert-info">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        AI Recommendation
+                                    </h6>
+                                    <div id="aiReply" class="mb-0" style="white-space: pre-line;"></div>
+                                </div>
+                                
+                                <div id="serviceInfo" class="mt-3"></div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -113,7 +136,10 @@
 
 <script>
 const baseUrl = <?= json_encode($baseUrl ?? '/skillbox/public') ?>;
+const isLoggedIn = <?= json_encode($isLoggedIn) ?>;
 
+<?php if ($isLoggedIn): ?>
+// Only initialize chatbot functionality if user is logged in
 document.getElementById('askAiBtn').addEventListener('click', async () => {
     const input = document.getElementById('aiQuestion');
     const out = document.getElementById('aiAnswer');
@@ -159,7 +185,7 @@ document.getElementById('askAiBtn').addEventListener('click', async () => {
             let infoHtml = '<div class="card border-success">';
             infoHtml += '<div class="card-body">';
             infoHtml += '<h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Recommended Match</h6>';
-            infoHtml += `<p class="mb-1"><strong>Service:</strong> <a href="${baseUrl}/services/${data.service.id}" target="_blank">${data.service.title}</a></p>`;
+            infoHtml += `<p class="mb-1"><strong>Service:</strong> <a href="${baseUrl}/services/${data.service.id}">${data.service.title}</a></p>`;
             infoHtml += `<p class="mb-1"><strong>Worker:</strong> ${data.worker.full_name}</p>`;
             if (data.worker.email) {
                 infoHtml += `<p class="mb-1"><strong>Email:</strong> <a href="mailto:${data.worker.email}">${data.worker.email}</a></p>`;
@@ -176,7 +202,7 @@ document.getElementById('askAiBtn').addEventListener('click', async () => {
         replyDiv.textContent = '❌ Network error. Please check your connection and try again.';
     } finally {
         btn.disabled = false;
-        btnText.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Ask AI';
+        btnText.textContent = 'Ask AI';
     }
 });
 
@@ -187,6 +213,7 @@ document.getElementById('aiQuestion').addEventListener('keydown', function(e) {
         document.getElementById('askAiBtn').click();
     }
 });
+<?php endif; ?>
 </script>
 
 <?php

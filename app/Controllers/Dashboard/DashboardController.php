@@ -6,13 +6,17 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Service;
 use App\Models\Activity;
+use App\Core\AuthMiddleware;
+use App\Core\RoleMiddleware;
 
 class DashboardController
 {
     protected $baseUrl = '/skillbox/public';
 
     public function index()
-{
+    {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
     // Stats
     $totalUsers = User::getCount();
     $totalServices = Service::getCount();
@@ -57,6 +61,9 @@ class DashboardController
 
     public function export()
     {
+        AuthMiddleware::web();
+        RoleMiddleware::admin();
+        
         $users = Activity::getAll();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();

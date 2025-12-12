@@ -5,15 +5,8 @@ use App\Models\Notification;
 
 class NotificationsController {
     public function index() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
+        \App\Core\AuthMiddleware::web();
         $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId) {
-            header('Location: /skillbox/public/login');
-            exit;
-        }
 
         $notifications = Notification::getByUserId($userId, 100); // fetch all user notifications
 

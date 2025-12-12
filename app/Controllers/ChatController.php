@@ -11,16 +11,8 @@ class ChatController {
     protected $userId;
     
     public function __construct() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        
+        \App\Core\AuthMiddleware::web();
         $this->userId = $_SESSION['user_id'] ?? null;
-        
-        if (!$this->userId) {
-            header("Location: {$this->baseUrl}/login");
-            exit;
-        }
     }
     
     /**
