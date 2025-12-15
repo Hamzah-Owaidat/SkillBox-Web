@@ -115,6 +115,8 @@ class UserController {
         $success = User::updateProfile($userId, $updateData);
 
         if ($success) {
+            // Update session with new full name so navbar reflects the change immediately
+            $_SESSION['full_name'] = $full_name;
             
             $_SESSION['toast_message'] = 'Profile updated successfully';
             $_SESSION['toast_type'] = 'success';
