@@ -14,12 +14,21 @@ class PortfolioController
 
     public function index()
     {
+        AuthMiddleware::web();
+        $user = $GLOBALS['auth_user'];
+        
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
         $allRoles = Role::getAll();
 
         // Only keep worker and supervisor
         $roles = array_filter($allRoles, fn($role) => in_array($role['name'], ['worker']));
 
         $services = Service::getAll();
+
+        // Pass user data to view for pre-filling form
+        $sessionFullName = $_SESSION['full_name'] ?? $user['full_name'] ?? '';
+        $sessionEmail = $user['email'] ?? '';
 
         require __DIR__ . '/../../views/submitCv.php';
     }

@@ -22,7 +22,7 @@
                      class="form-control rounded-3 border-0 shadow-sm" 
                      id="fullname" 
                      placeholder="Enter your full name" 
-                     value="<?= isset($portfolio) ? htmlspecialchars($portfolio['full_name']) : '' ?>"
+                     value="<?= isset($portfolio) ? htmlspecialchars($portfolio['full_name']) : (isset($sessionFullName) ? htmlspecialchars($sessionFullName) : '') ?>"
                      required>
             </div>
 
@@ -34,7 +34,7 @@
                      class="form-control rounded-3 border-0 shadow-sm" 
                      id="email" 
                      placeholder="Enter your email"
-                     value="<?= isset($portfolio) ? htmlspecialchars($portfolio['email']) : '' ?>"
+                     value="<?= isset($portfolio) ? htmlspecialchars($portfolio['email']) : (isset($sessionEmail) ? htmlspecialchars($sessionEmail) : '') ?>"
                      required>
             </div>
 
