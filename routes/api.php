@@ -5,6 +5,7 @@ use App\Controllers\Api\FileController;
 use App\Controllers\Api\ForgotPasswordController;
 use App\Controllers\Api\NotificationApiController;
 use App\Controllers\Api\PusherAuthController;
+use App\Controllers\Api\PortfolioApiController;
 use App\Controllers\Api\ServiceApiController;
 use App\Controllers\Api\UserApiController;
 use App\Controllers\AuthController;
@@ -45,6 +46,12 @@ $router->post('/api/notifications/send', [NotificationApiController::class, 'sen
 // Service endpoints (protected)
 $router->get('/api/services', [ServiceApiController::class, 'index']);
 $router->get('/api/services/{id}', [ServiceApiController::class, 'show']);
+
+// Portfolio (CV) submission for mobile
+$router->post('/api/portfolios', [PortfolioApiController::class, 'store']);
+$router->get('/api/portfolios/{id}', [PortfolioApiController::class, 'show']);
+$router->put('/api/portfolios/{id}', [PortfolioApiController::class, 'update']);
+$router->patch('/api/portfolios/{id}', [PortfolioApiController::class, 'update']);
 
 // API Chat Routes
 $router->get('/api/chat/conversations', [ChatApiController::class, 'getConversations']);
