@@ -135,7 +135,6 @@ $isLoggedIn = isset($_SESSION['user_id']);
 </section>
 
 <script>
-const baseUrl = <?= json_encode($baseUrl ?? '/skillbox/public') ?>;
 const isLoggedIn = <?= json_encode($isLoggedIn) ?>;
 
 <?php if ($isLoggedIn): ?>

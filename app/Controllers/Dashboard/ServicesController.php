@@ -308,7 +308,7 @@ class ServicesController {
                 $notificationData['message'],
                 $notificationData['type'],
                 true,
-                true 
+                false  // Don't broadcast publicly - clients already receive via private channel
             );
         } catch (\Exception $e) {
             error_log("Failed to send service notification: " . $e->getMessage());
